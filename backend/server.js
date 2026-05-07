@@ -52,27 +52,27 @@ app.get("/", (req, res) => {
 // GET CONTACTS
 app.get("/contact", async (req, res) => {
   try {
-    // Safe Mongo check
-    if (!mongoose.connection.db) {
+    // Wait for Mongo connection
+    if (mongoose.connection.readyState !== 1) {
       return res.status(200).json([]);
     }
 
-    const db = mongoose.connection.db;
-
-    const contacts = await db
+    const contacts = await mongoose.connection.db
       .collection("contacts")
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.status(200).json(Array.isArray(contacts) ? contacts : []);
+    return res.status(200).json(
+      Array.isArray(contacts) ? contacts : []
+    );
   } catch (err) {
     console.log("CONTACT ERROR:", err);
 
-    // Always send safe array
-    res.status(200).json([]);
+    return res.status(200).json([]);
   }
 });
+
 
 // SAVE CONTACT
 app.post("/contact", async (req, res) => {
@@ -209,25 +209,24 @@ app.put("/contact-replied", async (req, res) => {
 // GET SUBSCRIBERS
 app.get("/subscribers", async (req, res) => {
   try {
-    // Safe Mongo check
-    if (!mongoose.connection.db) {
+    // Wait for Mongo connection
+    if (mongoose.connection.readyState !== 1) {
       return res.status(200).json([]);
     }
 
-    const db = mongoose.connection.db;
-
-    const subscribers = await db
+    const subscribers = await mongoose.connection.db
       .collection("subscribers")
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.status(200).json(Array.isArray(subscribers) ? subscribers : []);
+    return res.status(200).json(
+      Array.isArray(subscribers) ? subscribers : []
+    );
   } catch (err) {
     console.log("SUBSCRIBERS ERROR:", err);
 
-    // Always send safe array
-    res.status(200).json([]);
+    return res.status(200).json([]);
   }
 });
 
