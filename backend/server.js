@@ -26,82 +26,29 @@ mongoose
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log(err));
 
-/* Test Route */
+/* HOME */
 app.get("/", (req, res) => {
   res.send("Backend Running");
 });
 
-/* CONTACT ROUTE */
+/* CONTACT */
 app.post("/contact", (req, res) => {
-  console.log(req.body);
+  console.log("CONTACT:", req.body);
 
   res.status(200).json({
     success: true,
-    message: "Contact form received",
+    message: "Contact saved",
   });
 });
 
-/* LOGIN ROUTE */
-// app.post("/login", (req, res) => {
-//   res.status(200).json({
-//     success: true,
-//     message: "Login success",
-//   });
-// });
-
-app.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Simple admin login
-    if (username === "admin" && password === "1234") {
-      return res.status(200).json({
-        success: true,
-        token: "admin123",
-      });
-    }
-
-    // MongoDB login (optional)
-    const db = mongoose.connection.db;
-
-    const user = await db
-      .collection("users")
-      .findOne({ username });
-
-    if (user && user.password === password) {
-      return res.status(200).json({
-        success: true,
-        token: "admin123",
-      });
-    }
-
-    return res.status(401).json({
-      success: false,
-      message: "Invalid username or password",
-    });
-  } catch (err) {
-    console.error(err);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-});
-
-
+/* LOGIN */
 app.post("/login", (req, res) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
-  console.log(email, password);
-
-  if (
-    email === "admin@pumpkin.com" &&
-    password === "admin123"
-  ) {
+  if (username === "admin" && password === "1234") {
     return res.status(200).json({
       success: true,
-      message: "Login successful",
+      token: "admin123",
     });
   }
 
@@ -111,12 +58,37 @@ app.post("/login", (req, res) => {
   });
 });
 
-/* SUBSCRIBE ROUTE */
+/* SUBSCRIBE */
 app.post("/subscribe", (req, res) => {
+  console.log("SUBSCRIBE:", req.body);
+
   res.status(200).json({
     success: true,
-    message: "Subscribed successfully",
+    message: "Subscribed",
   });
+});
+
+/* SUBSCRIBERS */
+app.get("/subscribers", (req, res) => {
+  res.status(200).json([
+    {
+      email: "demo@example.com",
+    },
+  ]);
+});
+
+/* TEMPLATES */
+app.get("/templates", (req, res) => {
+  res.status(200).json([
+    {
+      id: 1,
+      title: "Template 1",
+    },
+    {
+      id: 2,
+      title: "Template 2",
+    },
+  ]);
 });
 
 const PORT = process.env.PORT || 8080;
