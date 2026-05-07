@@ -53,7 +53,7 @@ const Admin = () => {
   // =========================
   const fetchUsers = async () => {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_URL}/subscribers", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/subscribers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -75,7 +75,7 @@ const Admin = () => {
   // =========================
   const fetchContacts = async () => {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_URL}/contact", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/contact`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +102,7 @@ const Admin = () => {
   // =========================
   const fetchTemplates = async () => {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_URL}/templates", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/templates`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -186,7 +186,7 @@ const Admin = () => {
 
     setLoading(true);
 
-    await fetch("${import.meta.env.VITE_API_URL}/send-template", {
+    await fetch(`${import.meta.env.VITE_API_URL}/send-template`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -207,7 +207,7 @@ const Admin = () => {
   // =========================
   const handleExport = async () => {
     try {
-      const res = await fetch("${import.meta.env.VITE_API_URL}/export", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/export`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -236,7 +236,7 @@ const Admin = () => {
   const sendReply = async () => {
     if (!replyMessage) return showModal("Write message", "error");
 
-    await fetch("${import.meta.env.VITE_API_URL}/reply", {
+    await fetch(`${import.meta.env.VITE_API_URL}/reply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

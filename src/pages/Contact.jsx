@@ -52,7 +52,7 @@ export const Contact = () => {
 
     setLoading(true);
 
-    fetch("${import.meta.env.VITE_API_URL}/contact", {
+    fetch(`${import.meta.env.VITE_API_URL}/contact`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -13,7 +13,7 @@ exports.handler = async (event) => {
     }
 
     // 🔴 IMPORTANT: Replace with your domain
-    const BASE_URL = "${import.meta.env.VITE_API_URL}/";
+    const BASE_URL = `${import.meta.env.VITE_API_URL}/`;
 
     // ✅ Fetch HTML template from public folder
     const htmlContent = await fetch(
