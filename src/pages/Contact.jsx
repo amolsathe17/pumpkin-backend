@@ -52,7 +52,7 @@ export const Contact = () => {
 
     setLoading(true);
 
-    fetch("/.netlify/functions/contact", {
+    fetch("https://pumpkin-backend-production-1df8.up.railway.app//contact", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

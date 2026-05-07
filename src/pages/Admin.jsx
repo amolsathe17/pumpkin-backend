@@ -53,7 +53,7 @@ const Admin = () => {
   // =========================
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/.netlify/functions/subscribers", {
+      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//subscribers", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -75,7 +75,7 @@ const Admin = () => {
   // =========================
   const fetchContacts = async () => {
     try {
-      const res = await fetch("/.netlify/functions/contact", {
+      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//contact", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +102,7 @@ const Admin = () => {
   // =========================
   const fetchTemplates = async () => {
     try {
-      const res = await fetch("/.netlify/functions/templates", {
+      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//templates", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -132,7 +132,7 @@ const Admin = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete subscriber?")) return;
 
-    await fetch(`/.netlify/functions/subscribers?id=${id}`, {
+    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//subscribers?id=${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -146,7 +146,7 @@ const Admin = () => {
   const deleteContact = async (id) => {
     if (!window.confirm("Delete message?")) return;
 
-    await fetch(`/.netlify/functions/contact?id=${id}`, {
+    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact?id=${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -158,7 +158,7 @@ const Admin = () => {
   // TOGGLE IMPORTANT
   // =========================
   const toggleImportant = async (id) => {
-    await fetch(`/.netlify/functions/contact-important?id=${id}`, {
+    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact-important?id=${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -170,7 +170,7 @@ const Admin = () => {
   // MARK REPLIED
   // =========================
   const markReplied = async (id) => {
-    await fetch(`/.netlify/functions/contact-replied?id=${id}`, {
+    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact-replied?id=${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -186,7 +186,7 @@ const Admin = () => {
 
     setLoading(true);
 
-    await fetch("/.netlify/functions/send-template", {
+    await fetch("https://pumpkin-backend-production-1df8.up.railway.app//send-template", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -207,7 +207,7 @@ const Admin = () => {
   // =========================
   const handleExport = async () => {
     try {
-      const res = await fetch("/.netlify/functions/export", {
+      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//export", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -236,7 +236,7 @@ const Admin = () => {
   const sendReply = async () => {
     if (!replyMessage) return showModal("Write message", "error");
 
-    await fetch("/.netlify/functions/reply", {
+    await fetch("https://pumpkin-backend-production-1df8.up.railway.app//reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

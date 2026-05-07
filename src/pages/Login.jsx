@@ -7,7 +7,7 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("/.netlify/functions/login", {
+      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
