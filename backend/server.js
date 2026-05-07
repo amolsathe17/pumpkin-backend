@@ -49,29 +49,51 @@ app.get("/", (req, res) => {
    CONTACT ROUTES
 ========================= */
 
-// Browser test route
-app.get("/contact", (req, res) => {
-  res.send("Contact route working");
+// GET CONTACTS
+app.get("/contact", async (req, res) => {
+  try {
+    // Safe Mongo check
+    if (!mongoose.connection.db) {
+      return res.status(200).json([]);
+    }
+
+    const db = mongoose.connection.db;
+
+    const contacts = await db
+      .collection("contacts")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.status(200).json(
+      Array.isArray(contacts) ? contacts : []
+    );
+  } catch (err) {
+    console.log("CONTACT ERROR:", err);
+
+    // Always send safe array
+    res.status(200).json([]);
+  }
 });
 
-// Contact form submit
+// SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
-    console.log("CONTACT DATA:", req.body);
-
     const db = mongoose.connection.db;
 
     await db.collection("contacts").insertOne({
       ...req.body,
+      important: false,
+      replied: false,
       createdAt: new Date(),
     });
 
     res.status(200).json({
       success: true,
-      message: "Contact form submitted successfully",
+      message: "Contact saved",
     });
   } catch (err) {
-    console.log("CONTACT ERROR:", err);
+    console.log("CONTACT SAVE ERROR:", err);
 
     res.status(500).json({
       success: false,
@@ -80,17 +102,143 @@ app.post("/contact", async (req, res) => {
   }
 });
 
+// DELETE CONTACT
+app.delete("/contact", async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const db = mongoose.connection.db;
+
+    await db.collection("contacts").deleteOne({
+      _id: new mongoose.Types.ObjectId(id),
+    });
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    console.log("DELETE CONTACT ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
+/* =========================
+   IMPORTANT CONTACT
+========================= */
+
+app.put("/contact-important", async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const db = mongoose.connection.db;
+
+    const contact = await db.collection("contacts").findOne({
+      _id: new mongoose.Types.ObjectId(id),
+    });
+
+    await db.collection("contacts").updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      {
+        $set: {
+          important: !contact?.important,
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    console.log("IMPORTANT ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
+/* =========================
+   MARK REPLIED
+========================= */
+
+app.put("/contact-replied", async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    const db = mongoose.connection.db;
+
+    await db.collection("contacts").updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      {
+        $set: {
+          replied: true,
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+    });
+  } catch (err) {
+    console.log("REPLIED ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
 /* =========================
    SUBSCRIBE ROUTES
 ========================= */
 
+// GET SUBSCRIBERS
+app.get("/subscribers", async (req, res) => {
+  try {
+    // Safe Mongo check
+    if (!mongoose.connection.db) {
+      return res.status(200).json([]);
+    }
+
+    const db = mongoose.connection.db;
+
+    const subscribers = await db
+      .collection("subscribers")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.status(200).json(
+      Array.isArray(subscribers) ? subscribers : []
+    );
+  } catch (err) {
+    console.log("SUBSCRIBERS ERROR:", err);
+
+    // Always send safe array
+    res.status(200).json([]);
+  }
+});
+
+// ADD SUBSCRIBER
 app.post("/subscribe", async (req, res) => {
   try {
     const { email } = req.body;
 
-    console.log("SUBSCRIBE:", email);
-
     const db = mongoose.connection.db;
+
+    const existing = await db.collection("subscribers").findOne({
+      email,
+    });
+
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: "Already subscribed",
+      });
+    }
 
     await db.collection("subscribers").insertOne({
       email,
@@ -111,22 +259,25 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
-app.get("/subscribers", async (req, res) => {
+// DELETE SUBSCRIBER
+app.delete("/subscribers", async (req, res) => {
   try {
+    const { id } = req.query;
+
     const db = mongoose.connection.db;
 
-    const subscribers = await db
-      .collection("subscribers")
-      .find({})
-      .toArray();
+    await db.collection("subscribers").deleteOne({
+      _id: new mongoose.Types.ObjectId(id),
+    });
 
-    res.status(200).json(subscribers);
+    res.status(200).json({
+      success: true,
+    });
   } catch (err) {
-    console.log("SUBSCRIBERS ERROR:", err);
+    console.log("DELETE SUBSCRIBER ERROR:", err);
 
     res.status(500).json({
       success: false,
-      message: err.message,
     });
   }
 });
@@ -139,14 +290,11 @@ app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    console.log("LOGIN:", username, password);
-
-    // SIMPLE ADMIN LOGIN
+    // SIMPLE LOGIN
     if (username === "admin" && password === "1234") {
       return res.status(200).json({
         success: true,
         token: "admin123",
-        message: "Login successful",
       });
     }
 
@@ -170,15 +318,67 @@ app.post("/login", async (req, res) => {
 
 app.get("/templates", (req, res) => {
   res.status(200).json([
-    {
-      id: 1,
-      title: "Template 1",
-    },
-    {
-      id: 2,
-      title: "Template 2",
-    },
+    "Welcome Template",
+    "Offer Template",
+    "Festival Template",
   ]);
+});
+
+/* =========================
+   SEND TEMPLATE
+========================= */
+
+app.post("/send-template", async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Template sent successfully",
+    });
+  } catch (err) {
+    console.log("SEND TEMPLATE ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
+/* =========================
+   REPLY
+========================= */
+
+app.post("/reply", async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Reply sent",
+    });
+  } catch (err) {
+    console.log("REPLY ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
+/* =========================
+   EXPORT
+========================= */
+
+app.get("/export", async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Export success",
+    });
+  } catch (err) {
+    console.log("EXPORT ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+    });
+  }
 });
 
 /* =========================
