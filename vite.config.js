@@ -7,10 +7,8 @@ import tailwindcss from '@tailwindcss/vite'
 //   plugins: [react(), tailwindcss()],
 // })
 
-
-
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   
   server: {
     host: "0.0.0.0",
