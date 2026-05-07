@@ -11,17 +11,9 @@ const app = express();
    MIDDLEWARE
 ========================= */
 
-app.use(
-  cors({
-    origin: [
-      "https://brilliant-intuition-production-07c6.up.railway.app",
-      "https://pumpkinpicturesllp.uk",
-      "https://www.pumpkinpicturesllp.uk",
-      "http://localhost:5173",
-    ],
-    credentials: true,
-  })
-);
+app.use(cors());
+
+app.options("*", cors());
 
 app.use(express.json());
 
@@ -29,13 +21,26 @@ app.use(express.json());
    EMAIL CONFIG
 ========================= */
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+let transporter = null;
+
+if (
+  process.env.EMAIL_USER &&
+  process.env.EMAIL_PASS
+) {
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  console.log("Email Service Ready ✅");
+} else {
+  console.log(
+    "EMAIL_USER or EMAIL_PASS missing ❌"
+  );
+}
 
 /* =========================
    MONGODB CONNECTION
@@ -138,9 +143,11 @@ app.delete("/contact", async (req, res) => {
   try {
     const { id } = req.query;
 
-    await mongoose.connection.db.collection("contacts").deleteOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
+    await mongoose.connection.db
+      .collection("contacts")
+      .deleteOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
 
     return res.status(200).json({
       success: true,
@@ -164,12 +171,16 @@ app.put("/contact-important", async (req, res) => {
 
     const db = mongoose.connection.db;
 
-    const contact = await db.collection("contacts").findOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
+    const contact = await db
+      .collection("contacts")
+      .findOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
 
     await db.collection("contacts").updateOne(
-      { _id: new mongoose.Types.ObjectId(id) },
+      {
+        _id: new mongoose.Types.ObjectId(id),
+      },
       {
         $set: {
           important: !contact?.important,
@@ -197,14 +208,18 @@ app.put("/contact-replied", async (req, res) => {
   try {
     const { id } = req.query;
 
-    await mongoose.connection.db.collection("contacts").updateOne(
-      { _id: new mongoose.Types.ObjectId(id) },
-      {
-        $set: {
-          replied: true,
+    await mongoose.connection.db
+      .collection("contacts")
+      .updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(id),
         },
-      }
-    );
+        {
+          $set: {
+            replied: true,
+          },
+        }
+      );
 
     return res.status(200).json({
       success: true,
@@ -229,11 +244,12 @@ app.get("/subscribers", async (req, res) => {
       return res.status(200).json([]);
     }
 
-    const subscribers = await mongoose.connection.db
-      .collection("subscribers")
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    const subscribers =
+      await mongoose.connection.db
+        .collection("subscribers")
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
 
     return res.status(200).json(
       Array.isArray(subscribers)
@@ -241,7 +257,10 @@ app.get("/subscribers", async (req, res) => {
         : []
     );
   } catch (err) {
-    console.log("SUBSCRIBERS FETCH ERROR:", err);
+    console.log(
+      "SUBSCRIBERS FETCH ERROR:",
+      err
+    );
 
     return res.status(200).json([]);
   }
@@ -288,14 +307,20 @@ app.post("/subscribe", async (req, res) => {
         createdAt: new Date(),
       });
 
-    console.log("SUBSCRIBER SAVED:", result);
+    console.log(
+      "SUBSCRIBER SAVED:",
+      result
+    );
 
     return res.status(200).json({
       success: true,
       message: "Subscribed successfully",
     });
   } catch (err) {
-    console.log("SUBSCRIBE SAVE ERROR:", err);
+    console.log(
+      "SUBSCRIBE SAVE ERROR:",
+      err
+    );
 
     return res.status(500).json({
       success: false,
@@ -319,7 +344,10 @@ app.delete("/subscribers", async (req, res) => {
       success: true,
     });
   } catch (err) {
-    console.log("DELETE SUBSCRIBER ERROR:", err);
+    console.log(
+      "DELETE SUBSCRIBER ERROR:",
+      err
+    );
 
     return res.status(500).json({
       success: false,
@@ -333,7 +361,8 @@ app.delete("/subscribers", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password } =
+      req.body;
 
     if (
       username === "admin" &&
@@ -376,43 +405,54 @@ app.get("/templates", (req, res) => {
    SEND TEMPLATE
 ========================= */
 
-app.post("/send-template", async (req, res) => {
-  try {
-    const { templateName, subscribers } =
-      req.body;
+app.post(
+  "/send-template",
+  async (req, res) => {
+    try {
+      if (!transporter) {
+        return res.status(500).json({
+          success: false,
+          message:
+            "Email service not configured",
+        });
+      }
 
-    if (!templateName) {
-      return res.status(400).json({
-        success: false,
-        message: "Template required",
-      });
-    }
+      const {
+        templateName,
+        subscribers,
+      } = req.body;
 
-    if (
-      !subscribers ||
-      subscribers.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "No subscribers found",
-      });
-    }
+      if (!templateName) {
+        return res.status(400).json({
+          success: false,
+          message: "Template required",
+        });
+      }
 
-    let subject = "";
-    let html = "";
+      if (
+        !subscribers ||
+        subscribers.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "No subscribers found",
+        });
+      }
 
-    // =========================
-    // WELCOME TEMPLATE
-    // =========================
+      let subject = "";
+      let html = "";
 
-    if (
-      templateName ===
-      "Welcome Template"
-    ) {
-      subject =
-        "Welcome To Pumpkin Pictures 🎉";
+      // WELCOME TEMPLATE
 
-      html = `
+      if (
+        templateName ===
+        "Welcome Template"
+      ) {
+        subject =
+          "Welcome To Pumpkin Pictures 🎉";
+
+        html = `
         <div style="font-family:Arial;padding:20px">
           <h1>Welcome To Pumpkin Pictures</h1>
 
@@ -427,20 +467,18 @@ app.post("/send-template", async (req, res) => {
           <h3>Thank You ❤️</h3>
         </div>
       `;
-    }
+      }
 
-    // =========================
-    // OFFER TEMPLATE
-    // =========================
+      // OFFER TEMPLATE
 
-    else if (
-      templateName ===
-      "Offer Template"
-    ) {
-      subject =
-        "Special Travel Offer ✈️";
+      else if (
+        templateName ===
+        "Offer Template"
+      ) {
+        subject =
+          "Special Travel Offer ✈️";
 
-      html = `
+        html = `
         <div style="font-family:Arial;padding:20px">
           <h1>Special Offer</h1>
 
@@ -451,20 +489,18 @@ app.post("/send-template", async (req, res) => {
           <h3>Book Your Trip Now 🚀</h3>
         </div>
       `;
-    }
+      }
 
-    // =========================
-    // FESTIVAL TEMPLATE
-    // =========================
+      // FESTIVAL TEMPLATE
 
-    else if (
-      templateName ===
-      "Festival Template"
-    ) {
-      subject =
-        "Festival Holiday Packages 🎊";
+      else if (
+        templateName ===
+        "Festival Template"
+      ) {
+        subject =
+          "Festival Holiday Packages 🎊";
 
-      html = `
+        html = `
         <div style="font-family:Arial;padding:20px">
           <h1>Festival Packages</h1>
 
@@ -475,45 +511,44 @@ app.post("/send-template", async (req, res) => {
           <h3>Limited Seats Available ✨</h3>
         </div>
       `;
-    }
+      }
 
-    // =========================
-    // SEND EMAILS
-    // =========================
+      // SEND EMAILS
 
-    for (const user of subscribers) {
-      if (!user?.email) continue;
+      for (const user of subscribers) {
+        if (!user?.email) continue;
 
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject,
-        html,
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject,
+          html,
+        });
+
+        console.log(
+          "EMAIL SENT TO:",
+          user.email
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Template sent successfully",
       });
-
+    } catch (err) {
       console.log(
-        "EMAIL SENT TO:",
-        user.email
+        "SEND TEMPLATE ERROR:",
+        err
       );
+
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
     }
-
-    return res.status(200).json({
-      success: true,
-      message:
-        "Template sent successfully",
-    });
-  } catch (err) {
-    console.log(
-      "SEND TEMPLATE ERROR:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
   }
-});
+);
 
 /* =========================
    REPLY
@@ -521,7 +556,16 @@ app.post("/send-template", async (req, res) => {
 
 app.post("/reply", async (req, res) => {
   try {
-    const { email, message } = req.body;
+    if (!transporter) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Email service not configured",
+      });
+    }
+
+    const { email, message } =
+      req.body;
 
     if (!email || !message) {
       return res.status(400).json({
@@ -537,12 +581,12 @@ app.post("/reply", async (req, res) => {
       subject:
         "Reply From Pumpkin Pictures",
       html: `
-        <div style="font-family:Arial;padding:20px">
-          <h2>Reply From Pumpkin Pictures</h2>
+      <div style="font-family:Arial;padding:20px">
+        <h2>Reply From Pumpkin Pictures</h2>
 
-          <p>${message}</p>
-        </div>
-      `,
+        <p>${message}</p>
+      </div>
+    `,
     });
 
     return res.status(200).json({
@@ -587,7 +631,8 @@ app.get("/export", async (req, res) => {
    SERVER
 ========================= */
 
-const PORT = process.env.PORT || 8080;
+const PORT =
+  process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(
