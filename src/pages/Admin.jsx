@@ -56,7 +56,9 @@ const Admin = () => {
   const fetchUsers = async () => {
     try {
       const res = await fetch(`${API}/subscribers`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -76,7 +78,9 @@ const Admin = () => {
   const fetchContacts = async () => {
     try {
       const res = await fetch(`${API}/contact`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -86,7 +90,8 @@ const Admin = () => {
       const safeData = Array.isArray(data) ? data : [];
 
       if (prevContactsRef.current.length > 0) {
-        const diff = safeData.length - prevContactsRef.current.length;
+        const diff =
+          safeData.length - prevContactsRef.current.length;
 
         if (diff > 0) {
           setNotificationCount((prev) => prev + diff);
@@ -108,7 +113,9 @@ const Admin = () => {
   const fetchTemplates = async () => {
     try {
       const res = await fetch(`${API}/templates`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -132,8 +139,8 @@ const Admin = () => {
     fetchContacts();
 
     const interval = setInterval(() => {
-      fetchContacts();
       fetchUsers();
+      fetchContacts();
     }, 5000);
 
     return () => clearInterval(interval);
@@ -152,7 +159,9 @@ const Admin = () => {
     try {
       await fetch(`${API}/subscribers?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       fetchUsers();
@@ -170,7 +179,9 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact?id=${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       fetchContacts();
@@ -186,7 +197,9 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact-important?id=${id}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       fetchContacts();
@@ -202,7 +215,9 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact-replied?id=${id}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       fetchContacts();
@@ -250,7 +265,9 @@ const Admin = () => {
     try {
       const res = await fetch(`${API}/export`, {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!res.ok) throw new Error();
@@ -322,17 +339,22 @@ const Admin = () => {
       .includes(search.toLowerCase())
   );
 
-  const indexOfLast = currentPage * usersPerPage;
-  const indexOfFirst = indexOfLast - usersPerPage;
+  // =========================
+  // PAGINATION FIXED
+  // =========================
+  const perPage = Number(usersPerPage);
+
+  const indexOfLast = currentPage * perPage;
+
+  const indexOfFirst = indexOfLast - perPage;
 
   const currentUsers = filteredUsers.slice(
     indexOfFirst,
     indexOfLast
   );
 
-  const totalPages = Math.ceil(
-    filteredUsers.length / usersPerPage
-  );
+  const totalPages =
+    Math.ceil(filteredUsers.length / perPage) || 1;
 
   const barData = [
     { name: "Total", value: users.length },
@@ -391,7 +413,11 @@ const Admin = () => {
             <div className="bg-white opacity-80 pr-3 pt-3 rounded-xl shadow flex items-center justify-center">
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" outerRadius={90}>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    outerRadius={90}
+                  >
                     {pieData.map((_, i) => (
                       <Cell
                         key={i}
@@ -399,6 +425,7 @@ const Admin = () => {
                       />
                     ))}
                   </Pie>
+
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
@@ -442,12 +469,16 @@ const Admin = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
 
+              {/* PAGINATION FIX */}
               <select
                 className="p-2 border rounded"
                 value={usersPerPage}
-                onChange={(e) =>
-                  setUsersPerPage(Number(e.target.value))
-                }
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+
+                  setUsersPerPage(value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value={5}>5 / page</option>
                 <option value={10}>10 / page</option>
@@ -581,13 +612,13 @@ const Admin = () => {
             </button>
 
             <span className="px-3 py-1">
-              Page {currentPage} / {totalPages || 1}
+              Page {currentPage} / {totalPages}
             </span>
 
             <button
               onClick={() =>
                 setCurrentPage((p) =>
-                  Math.min(p + 1, totalPages || 1)
+                  Math.min(p + 1, totalPages)
                 )
               }
               className="px-3 py-1 bg-white text-black rounded cursor-pointer"
@@ -610,7 +641,10 @@ const Admin = () => {
 
               <button
                 onClick={() =>
-                  setModal({ ...modal, show: false })
+                  setModal({
+                    ...modal,
+                    show: false,
+                  })
                 }
                 className="px-4 py-2 bg-blue-600 text-white rounded"
               >
