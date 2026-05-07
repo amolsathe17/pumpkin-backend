@@ -6,7 +6,7 @@ require("dotenv").config();
 const app = express();
 
 /* =========================
-   CORS
+   MIDDLEWARE
 ========================= */
 
 app.use(
@@ -17,9 +17,8 @@ app.use(
       "https://www.pumpkinpicturesllp.uk",
       "http://localhost:5173",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-  }),
+  })
 );
 
 app.use(express.json());
@@ -29,20 +28,22 @@ app.use(express.json());
 ========================= */
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    dbName: "travel",
+  })
   .then(() => {
-    console.log("MongoDB Connected");
+    console.log("MongoDB Connected Successfully");
   })
   .catch((err) => {
-    console.log("MongoDB Error:", err);
+    console.log("MongoDB Connection Error:", err);
   });
 
 /* =========================
-   HOME ROUTE
+   HOME
 ========================= */
 
 app.get("/", (req, res) => {
-  res.send("Backend Running");
+  res.send("Backend Running Successfully 🚀");
 });
 
 /* =========================
@@ -52,7 +53,6 @@ app.get("/", (req, res) => {
 // GET CONTACTS
 app.get("/contact", async (req, res) => {
   try {
-    // Wait for Mongo connection
     if (mongoose.connection.readyState !== 1) {
       return res.status(200).json([]);
     }
@@ -67,21 +67,19 @@ app.get("/contact", async (req, res) => {
       Array.isArray(contacts) ? contacts : []
     );
   } catch (err) {
-    console.log("CONTACT ERROR:", err);
+    console.log("CONTACT FETCH ERROR:", err);
 
     return res.status(200).json([]);
   }
 });
 
-
 // SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
-    // ✅ Check MongoDB connection first
-    if (!mongoose.connection.db) {
-      return res.status(200).json({
-        success: true,
-        message: "Temporary success (DB not ready)",
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({
+        success: false,
+        message: "MongoDB not connected",
       });
     }
 
@@ -96,19 +94,22 @@ app.post("/contact", async (req, res) => {
       createdAt: new Date(),
     };
 
-    await db.collection("contacts").insertOne(contactData);
+    const result = await db
+      .collection("contacts")
+      .insertOne(contactData);
+
+    console.log("CONTACT SAVED:", result);
 
     return res.status(200).json({
       success: true,
       message: "Contact saved successfully",
     });
   } catch (err) {
-    console.log("CONTACT POST ERROR:", err);
+    console.log("CONTACT SAVE ERROR:", err);
 
-    // ✅ Prevent frontend crash
-    return res.status(200).json({
+    return res.status(500).json({
       success: false,
-      message: "Server handled error safely",
+      message: err.message,
     });
   }
 });
@@ -118,26 +119,25 @@ app.delete("/contact", async (req, res) => {
   try {
     const { id } = req.query;
 
-    const db = mongoose.connection.db;
-
-    await db.collection("contacts").deleteOne({
+    await mongoose.connection.db.collection("contacts").deleteOne({
       _id: new mongoose.Types.ObjectId(id),
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      message: "Contact deleted",
     });
   } catch (err) {
     console.log("DELETE CONTACT ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
 });
 
 /* =========================
-   IMPORTANT CONTACT
+   CONTACT IMPORTANT
 ========================= */
 
 app.put("/contact-important", async (req, res) => {
@@ -156,60 +156,57 @@ app.put("/contact-important", async (req, res) => {
         $set: {
           important: !contact?.important,
         },
-      },
+      }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
     });
   } catch (err) {
     console.log("IMPORTANT ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
 });
 
 /* =========================
-   MARK REPLIED
+   CONTACT REPLIED
 ========================= */
 
 app.put("/contact-replied", async (req, res) => {
   try {
     const { id } = req.query;
 
-    const db = mongoose.connection.db;
-
-    await db.collection("contacts").updateOne(
+    await mongoose.connection.db.collection("contacts").updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
       {
         $set: {
           replied: true,
         },
-      },
+      }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
     });
   } catch (err) {
     console.log("REPLIED ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
 });
 
 /* =========================
-   SUBSCRIBE ROUTES
+   SUBSCRIBERS ROUTES
 ========================= */
 
 // GET SUBSCRIBERS
 app.get("/subscribers", async (req, res) => {
   try {
-    // Wait for Mongo connection
     if (mongoose.connection.readyState !== 1) {
       return res.status(200).json([]);
     }
@@ -224,28 +221,26 @@ app.get("/subscribers", async (req, res) => {
       Array.isArray(subscribers) ? subscribers : []
     );
   } catch (err) {
-    console.log("SUBSCRIBERS ERROR:", err);
+    console.log("SUBSCRIBERS FETCH ERROR:", err);
 
     return res.status(200).json([]);
   }
 });
 
-// ADD SUBSCRIBER
+// SAVE SUBSCRIBER
 app.post("/subscribe", async (req, res) => {
   try {
-    // ✅ Check MongoDB connection
-    if (!mongoose.connection.db) {
-      return res.status(200).json({
-        success: true,
-        message: "Temporary success (DB not ready)",
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({
+        success: false,
+        message: "MongoDB not connected",
       });
     }
 
     const { email } = req.body;
 
-    // ✅ Validate email safely
     if (!email) {
-      return res.status(200).json({
+      return res.status(400).json({
         success: false,
         message: "Email required",
       });
@@ -253,7 +248,6 @@ app.post("/subscribe", async (req, res) => {
 
     const db = mongoose.connection.db;
 
-    // ✅ Check existing subscriber
     const existing = await db.collection("subscribers").findOne({
       email,
     });
@@ -265,23 +259,23 @@ app.post("/subscribe", async (req, res) => {
       });
     }
 
-    // ✅ Insert subscriber
-    await db.collection("subscribers").insertOne({
+    const result = await db.collection("subscribers").insertOne({
       email,
       createdAt: new Date(),
     });
+
+    console.log("SUBSCRIBER SAVED:", result);
 
     return res.status(200).json({
       success: true,
       message: "Subscribed successfully",
     });
   } catch (err) {
-    console.log("SUBSCRIBE ERROR:", err);
+    console.log("SUBSCRIBE SAVE ERROR:", err);
 
-    // ✅ Prevent frontend crash
-    return res.status(200).json({
+    return res.status(500).json({
       success: false,
-      message: "Server handled error safely",
+      message: err.message,
     });
   }
 });
@@ -291,33 +285,31 @@ app.delete("/subscribers", async (req, res) => {
   try {
     const { id } = req.query;
 
-    const db = mongoose.connection.db;
-
-    await db.collection("subscribers").deleteOne({
+    await mongoose.connection.db.collection("subscribers").deleteOne({
       _id: new mongoose.Types.ObjectId(id),
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
+      message: "Subscriber deleted",
     });
   } catch (err) {
     console.log("DELETE SUBSCRIBER ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
 });
 
 /* =========================
-   LOGIN ROUTE
+   LOGIN
 ========================= */
 
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // SIMPLE LOGIN
     if (username === "admin" && password === "1234") {
       return res.status(200).json({
         success: true,
@@ -340,13 +332,15 @@ app.post("/login", async (req, res) => {
 });
 
 /* =========================
-   TEMPLATES ROUTE
+   TEMPLATES
 ========================= */
 
 app.get("/templates", (req, res) => {
-  res
-    .status(200)
-    .json(["Welcome Template", "Offer Template", "Festival Template"]);
+  return res.status(200).json([
+    "Welcome Template",
+    "Offer Template",
+    "Festival Template",
+  ]);
 });
 
 /* =========================
@@ -355,14 +349,14 @@ app.get("/templates", (req, res) => {
 
 app.post("/send-template", async (req, res) => {
   try {
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Template sent successfully",
     });
   } catch (err) {
     console.log("SEND TEMPLATE ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
@@ -374,14 +368,14 @@ app.post("/send-template", async (req, res) => {
 
 app.post("/reply", async (req, res) => {
   try {
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Reply sent",
+      message: "Reply sent successfully",
     });
   } catch (err) {
     console.log("REPLY ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
@@ -393,14 +387,16 @@ app.post("/reply", async (req, res) => {
 
 app.get("/export", async (req, res) => {
   try {
-    res.status(200).json({
-      success: true,
-      message: "Export success",
-    });
+    const subscribers = await mongoose.connection.db
+      .collection("subscribers")
+      .find({})
+      .toArray();
+
+    return res.status(200).json(subscribers);
   } catch (err) {
     console.log("EXPORT ERROR:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
     });
   }
