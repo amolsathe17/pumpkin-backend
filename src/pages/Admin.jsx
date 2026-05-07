@@ -43,11 +43,17 @@ const Admin = () => {
   const API = import.meta.env.VITE_API_URL;
 
   const showModal = (message, type = "success") => {
-    setModal({ show: true, message, type });
+    setModal({
+      show: true,
+      message,
+      type,
+    });
   };
 
   useEffect(() => {
-    if (!token) navigate("/login");
+    if (!token) {
+      navigate("/login");
+    }
   }, []);
 
   // =========================
@@ -63,11 +69,9 @@ const Admin = () => {
 
       const data = await res.json();
 
-      console.log("SUBSCRIBERS:", data);
-
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.log("SUBSCRIBERS FETCH ERROR:", err);
+      console.log("SUBSCRIBERS ERROR:", err);
       setUsers([]);
     }
   };
@@ -85,8 +89,6 @@ const Admin = () => {
 
       const data = await res.json();
 
-      console.log("CONTACTS:", data);
-
       const safeData = Array.isArray(data) ? data : [];
 
       if (prevContactsRef.current.length > 0) {
@@ -102,7 +104,7 @@ const Admin = () => {
 
       setContacts(safeData);
     } catch (err) {
-      console.log("CONTACT FETCH ERROR:", err);
+      console.log("CONTACT ERROR:", err);
       setContacts([]);
     }
   };
@@ -135,8 +137,8 @@ const Admin = () => {
 
   useEffect(() => {
     fetchUsers();
-    fetchTemplates();
     fetchContacts();
+    fetchTemplates();
 
     const interval = setInterval(() => {
       fetchUsers();
@@ -231,7 +233,10 @@ const Admin = () => {
   // =========================
   const sendTemplate = async () => {
     if (!selectedTemplate) {
-      return showModal("Select template first", "error");
+      return showModal(
+        "Select template first",
+        "error"
+      );
     }
 
     try {
@@ -252,7 +257,11 @@ const Admin = () => {
       showModal("Template sent successfully 🚀");
     } catch (err) {
       console.log(err);
-      showModal("Failed to send template", "error");
+
+      showModal(
+        "Failed to send template",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -270,7 +279,9 @@ const Admin = () => {
         },
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        throw new Error();
+      }
 
       const blob = await res.blob();
 
@@ -287,6 +298,7 @@ const Admin = () => {
       showModal("Export successful ✅");
     } catch (err) {
       console.log(err);
+
       showModal("Export failed", "error");
     }
   };
@@ -296,7 +308,10 @@ const Admin = () => {
   // =========================
   const sendReply = async () => {
     if (!replyMessage) {
-      return showModal("Write message", "error");
+      return showModal(
+        "Write message",
+        "error"
+      );
     }
 
     try {
@@ -325,7 +340,7 @@ const Admin = () => {
   };
 
   // =========================
-  // FILTER
+  // FILTER USERS
   // =========================
   const filteredUsers = users.filter((u) =>
     (u?.email || "")
@@ -333,6 +348,9 @@ const Admin = () => {
       .includes(search.toLowerCase())
   );
 
+  // =========================
+  // FILTER CONTACTS
+  // =========================
   const filteredContacts = contacts.filter((c) =>
     (c?.email || "")
       .toLowerCase()
@@ -340,30 +358,58 @@ const Admin = () => {
   );
 
   // =========================
-  // PAGINATION FIXED
+  // PAGINATION
   // =========================
   const perPage = Number(usersPerPage);
 
-  const indexOfLast = currentPage * perPage;
+  // USERS
+  const userIndexOfLast = currentPage * perPage;
 
-  const indexOfFirst = indexOfLast - perPage;
+  const userIndexOfFirst =
+    userIndexOfLast - perPage;
 
   const currentUsers = filteredUsers.slice(
-    indexOfFirst,
-    indexOfLast
+    userIndexOfFirst,
+    userIndexOfLast
+  );
+
+  // CONTACTS
+  const contactIndexOfLast = currentPage * perPage;
+
+  const contactIndexOfFirst =
+    contactIndexOfLast - perPage;
+
+  const currentContacts = filteredContacts.slice(
+    contactIndexOfFirst,
+    contactIndexOfLast
   );
 
   const totalPages =
     Math.ceil(filteredUsers.length / perPage) || 1;
 
+  // =========================
+  // CHARTS
+  // =========================
   const barData = [
-    { name: "Total", value: users.length },
-    { name: "Filtered", value: filteredUsers.length },
+    {
+      name: "Total",
+      value: users.length,
+    },
+    {
+      name: "Filtered",
+      value: filteredUsers.length,
+    },
   ];
 
   const pieData = [
-    { name: "Total", value: users.length },
-    { name: "Filtered", value: filteredUsers.length },
+    {
+      name: "Total",
+      value: users.length,
+    },
+    {
+      name: "Filtered",
+      value: filteredUsers.length,
+    },
   ];
 
   const COLORS = ["#3b82f6", "#22c55e"];
@@ -381,6 +427,7 @@ const Admin = () => {
         <div className="absolute inset-0 bg-black/40"></div>
 
         <div className="relative z-10 pt-20">
+          {/* HEADER */}
           <div className="flex justify-between max-w-7xl mx-auto px-4 py-4">
             <h1 className="text-3xl font-bold text-white">
               Admin Dashboard
@@ -397,6 +444,7 @@ const Admin = () => {
             </button>
           </div>
 
+          {/* TOP SECTION */}
           <div className="grid md:grid-cols-3 gap-4 max-w-7xl mx-auto mb-1 px-4 py-4">
             <div className="bg-white opacity-80 pr-3 pt-3 rounded-xl shadow flex items-center justify-center">
               <ResponsiveContainer width="100%" height={180}>
@@ -405,7 +453,10 @@ const Admin = () => {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#3b82f6" />
+                  <Bar
+                    dataKey="value"
+                    fill="#3b82f6"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -421,7 +472,9 @@ const Admin = () => {
                     {pieData.map((_, i) => (
                       <Cell
                         key={i}
-                        fill={COLORS[i % COLORS.length]}
+                        fill={
+                          COLORS[i % COLORS.length]
+                        }
                       />
                     ))}
                   </Pie>
@@ -443,10 +496,14 @@ const Admin = () => {
                 className="p-2 border rounded"
                 value={selectedTemplate}
                 onChange={(e) =>
-                  setSelectedTemplate(e.target.value)
+                  setSelectedTemplate(
+                    e.target.value
+                  )
                 }
               >
-                <option value="">Select Template</option>
+                <option value="">
+                  Select Template
+                </option>
 
                 {templates.map((t, i) => (
                   <option key={i} value={t}>
@@ -459,35 +516,50 @@ const Admin = () => {
                 onClick={sendTemplate}
                 className="bg-purple-600 text-white py-2 rounded cursor-pointer"
               >
-                {loading ? "Sending..." : "Send Template"}
+                {loading
+                  ? "Sending..."
+                  : "Send Template"}
               </button>
 
               <input
                 type="text"
                 placeholder="Search email..."
                 className="p-2 border rounded"
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
               />
 
-              {/* PAGINATION FIX */}
               <select
                 className="p-2 border rounded"
                 value={usersPerPage}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value);
+                  const value = parseInt(
+                    e.target.value
+                  );
 
                   setUsersPerPage(value);
                   setCurrentPage(1);
                 }}
               >
-                <option value={5}>5 / page</option>
-                <option value={10}>10 / page</option>
-                <option value={20}>20 / page</option>
+                <option value={5}>
+                  5 / page
+                </option>
+
+                <option value={10}>
+                  10 / page
+                </option>
+
+                <option value={20}>
+                  20 / page
+                </option>
               </select>
             </div>
           </div>
 
+          {/* DATA SECTION */}
           <div className="grid md:grid-cols-2 gap-2 max-w-7xl mx-auto mb-2 px-4 py-4 bg-black opacity-75 rounded-xl shadow">
+            {/* SUBSCRIBERS */}
             <div className="space-y-2">
               <h2 className="text-white text-xl font-semibold">
                 Subscribers
@@ -499,12 +571,15 @@ const Admin = () => {
                   className="flex justify-between bg-white p-4 rounded shadow"
                 >
                   <div>
-                    #{indexOfFirst + i + 1} —{" "}
+                    #
+                    {userIndexOfFirst + i + 1} —{" "}
                     {user?.email || "No Email"}
                   </div>
 
                   <button
-                    onClick={() => handleDelete(user?._id)}
+                    onClick={() =>
+                      handleDelete(user?._id)
+                    }
                     className="btn btn-secondary cursor-pointer"
                   >
                     Delete
@@ -513,49 +588,74 @@ const Admin = () => {
               ))}
             </div>
 
+            {/* CONTACTS */}
             <div className="space-y-2">
               <h2 className="text-white text-xl font-semibold">
                 Contact Messages
               </h2>
 
-              {filteredContacts.map((c, i) => (
+              {currentContacts.map((c, i) => (
                 <div
-                  key={c?._id || i}
+                  key={
+                    c?._id ||
+                    contactIndexOfFirst + i
+                  }
                   className="bg-white p-4 rounded shadow flex justify-between"
                 >
                   <div>
                     <div>
-                      <b>{c?.name || "No Name"}</b> (
-                      {c?.email || "No Email"})
+                      #
+                      {contactIndexOfFirst +
+                        i +
+                        1}{" "}
+                      —{" "}
+                      <b>
+                        {c?.name || "No Name"}
+                      </b>{" "}
+                      (
+                      {c?.email ||
+                        "No Email"}
+                      )
                     </div>
 
-                    <div>{c?.message || "No Message"}</div>
+                    <div>
+                      {c?.message ||
+                        "No Message"}
+                    </div>
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
                     <button
-                      onClick={() => setReplyBox(c)}
+                      onClick={() =>
+                        setReplyBox(c)
+                      }
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Mail size={16} />
                     </button>
 
                     <button
-                      onClick={() => toggleImportant(c?._id)}
+                      onClick={() =>
+                        toggleImportant(c?._id)
+                      }
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Star size={16} />
                     </button>
 
                     <button
-                      onClick={() => markReplied(c?._id)}
+                      onClick={() =>
+                        markReplied(c?._id)
+                      }
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Check size={16} />
                     </button>
 
                     <button
-                      onClick={() => deleteContact(c?._id)}
+                      onClick={() =>
+                        deleteContact(c?._id)
+                      }
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Trash size={16} />
@@ -566,6 +666,7 @@ const Admin = () => {
             </div>
           </div>
 
+          {/* REPLY MODAL */}
           {replyBox && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
               <div className="bg-white p-6 rounded-xl w-full max-w-md">
@@ -578,13 +679,17 @@ const Admin = () => {
                   className="w-full p-2 border rounded mb-4"
                   value={replyMessage}
                   onChange={(e) =>
-                    setReplyMessage(e.target.value)
+                    setReplyMessage(
+                      e.target.value
+                    )
                   }
                 />
 
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={() => setReplyBox(null)}
+                    onClick={() =>
+                      setReplyBox(null)
+                    }
                     className="px-4 py-2 bg-gray-400 rounded"
                   >
                     Cancel
@@ -601,10 +706,13 @@ const Admin = () => {
             </div>
           )}
 
+          {/* PAGINATION */}
           <div className="flex justify-center mt-6 pb-6 gap-2 text-white">
             <button
               onClick={() =>
-                setCurrentPage((p) => Math.max(p - 1, 1))
+                setCurrentPage((p) =>
+                  Math.max(p - 1, 1)
+                )
               }
               className="px-3 py-1 bg-white text-black rounded cursor-pointer"
             >
@@ -612,13 +720,17 @@ const Admin = () => {
             </button>
 
             <span className="px-3 py-1">
-              Page {currentPage} / {totalPages}
+              Page {currentPage} /{" "}
+              {totalPages}
             </span>
 
             <button
               onClick={() =>
                 setCurrentPage((p) =>
-                  Math.min(p + 1, totalPages)
+                  Math.min(
+                    p + 1,
+                    totalPages
+                  )
                 )
               }
               className="px-3 py-1 bg-white text-black rounded cursor-pointer"
@@ -628,6 +740,7 @@ const Admin = () => {
           </div>
         </div>
 
+        {/* MODAL */}
         {modal.show && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl w-full max-w-sm text-center">
@@ -637,7 +750,9 @@ const Admin = () => {
                   : "Success ✅"}
               </h2>
 
-              <p className="mb-4">{modal.message}</p>
+              <p className="mb-4">
+                {modal.message}
+              </p>
 
               <button
                 onClick={() =>
