@@ -98,7 +98,7 @@ const Admin = () => {
   };
 
   // =========================
-  // FETCH TEMPLATES
+  // FETCH TEMPLATES (FIXED)
   // =========================
   const fetchTemplates = async () => {
     try {
@@ -107,7 +107,15 @@ const Admin = () => {
       });
 
       const data = await res.json();
-      setTemplates(Array.isArray(data) ? data : []);
+
+      // ✅ FIXED ONLY LOGIC
+      const safeTemplates = Array.isArray(data)
+        ? data.map((t) =>
+            typeof t === "object" ? t.title || "" : t
+          )
+        : [];
+
+      setTemplates(safeTemplates);
     } catch (err) {
       console.log(err);
     }
@@ -127,7 +135,7 @@ const Admin = () => {
   }, [search, usersPerPage]);
 
   // =========================
-  // DELETE SUBSCRIBER (FIXED)
+  // DELETE SUBSCRIBER
   // =========================
   const handleDelete = async (id) => {
     if (!window.confirm("Delete subscriber?")) return;
@@ -141,7 +149,7 @@ const Admin = () => {
   };
 
   // =========================
-  // DELETE CONTACT (FIXED)
+  // DELETE CONTACT
   // =========================
   const deleteContact = async (id) => {
     if (!window.confirm("Delete message?")) return;
@@ -179,10 +187,11 @@ const Admin = () => {
   };
 
   // =========================
-  // SEND TEMPLATE (FIXED)
+  // SEND TEMPLATE
   // =========================
   const sendTemplate = async () => {
-    if (!selectedTemplate) return showModal("Select template first", "error");
+    if (!selectedTemplate)
+      return showModal("Select template first", "error");
 
     setLoading(true);
 
@@ -194,7 +203,7 @@ const Admin = () => {
       },
       body: JSON.stringify({
         templateName: selectedTemplate,
-        subscribers: users, // ✅ send all users
+        subscribers: users,
       }),
     });
 
@@ -259,11 +268,11 @@ const Admin = () => {
   // FILTER
   // =========================
   const filteredUsers = users.filter((u) =>
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredContacts = contacts.filter((c) =>
-    c.email.toLowerCase().includes(search.toLowerCase())
+    (c.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const indexOfLast = currentPage * usersPerPage;
@@ -526,6 +535,23 @@ const Admin = () => {
           </div>
         )}
       </div>
+
+      <select
+        className="p-2 border rounded"
+        value={selectedTemplate}
+        onChange={(e) => setSelectedTemplate(e.target.value)}
+      >
+        <option value="">Select Template</option>
+
+        {templates.map((t, i) => (
+          <option
+            key={i}
+            value={typeof t === "object" ? t.title : t}
+          >
+            {typeof t === "object" ? t.title : t}
+          </option>
+        ))}
+      </select>
     </>
   );
 };
