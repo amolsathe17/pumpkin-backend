@@ -5,7 +5,13 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://pumpkinpicturesllp.uk",
+    "https://www.pumpkinpicturesllp.uk"
+  ]
+}));
+
 app.use(express.json());
 
 mongoose
