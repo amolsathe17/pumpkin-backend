@@ -8,6 +8,7 @@ const app = express();
 /* =========================
    CORS
 ========================= */
+
 app.use(
   cors({
     origin: [
@@ -26,6 +27,7 @@ app.use(express.json());
 /* =========================
    MONGODB CONNECTION
 ========================= */
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -38,6 +40,7 @@ mongoose
 /* =========================
    HOME ROUTE
 ========================= */
+
 app.get("/", (req, res) => {
   res.send("Backend Running");
 });
@@ -46,12 +49,12 @@ app.get("/", (req, res) => {
    CONTACT ROUTES
 ========================= */
 
-// GET route for browser testing
+// Browser test route
 app.get("/contact", (req, res) => {
   res.send("Contact route working");
 });
 
-// POST route for contact form
+// Contact form submit
 app.post("/contact", async (req, res) => {
   try {
     console.log("CONTACT DATA:", req.body);
@@ -68,7 +71,7 @@ app.post("/contact", async (req, res) => {
       message: "Contact form submitted successfully",
     });
   } catch (err) {
-    console.log(err);
+    console.log("CONTACT ERROR:", err);
 
     res.status(500).json({
       success: false,
@@ -85,6 +88,8 @@ app.post("/subscribe", async (req, res) => {
   try {
     const { email } = req.body;
 
+    console.log("SUBSCRIBE:", email);
+
     const db = mongoose.connection.db;
 
     await db.collection("subscribers").insertOne({
@@ -97,7 +102,7 @@ app.post("/subscribe", async (req, res) => {
       message: "Subscribed successfully",
     });
   } catch (err) {
-    console.log(err);
+    console.log("SUBSCRIBE ERROR:", err);
 
     res.status(500).json({
       success: false,
@@ -117,7 +122,7 @@ app.get("/subscribers", async (req, res) => {
 
     res.status(200).json(subscribers);
   } catch (err) {
-    console.log(err);
+    console.log("SUBSCRIBERS ERROR:", err);
 
     res.status(500).json({
       success: false,
@@ -134,25 +139,14 @@ app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Simple admin login
+    console.log("LOGIN:", username, password);
+
+    // SIMPLE ADMIN LOGIN
     if (username === "admin" && password === "1234") {
       return res.status(200).json({
         success: true,
         token: "admin123",
-      });
-    }
-
-    // MongoDB user login
-    const db = mongoose.connection.db;
-
-    const user = await db
-      .collection("users")
-      .findOne({ username });
-
-    if (user && user.password === password) {
-      return res.status(200).json({
-        success: true,
-        token: "admin123",
+        message: "Login successful",
       });
     }
 
@@ -161,7 +155,7 @@ app.post("/login", async (req, res) => {
       message: "Invalid username or password",
     });
   } catch (err) {
-    console.log(err);
+    console.log("LOGIN ERROR:", err);
 
     return res.status(500).json({
       success: false,
