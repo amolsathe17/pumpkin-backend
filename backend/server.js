@@ -19,7 +19,7 @@ app.use(
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -65,9 +65,7 @@ app.get("/contact", async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.status(200).json(
-      Array.isArray(contacts) ? contacts : []
-    );
+    res.status(200).json(Array.isArray(contacts) ? contacts : []);
   } catch (err) {
     console.log("CONTACT ERROR:", err);
 
@@ -158,7 +156,7 @@ app.put("/contact-important", async (req, res) => {
         $set: {
           important: !contact?.important,
         },
-      }
+      },
     );
 
     res.status(200).json({
@@ -189,7 +187,7 @@ app.put("/contact-replied", async (req, res) => {
         $set: {
           replied: true,
         },
-      }
+      },
     );
 
     res.status(200).json({
@@ -224,9 +222,7 @@ app.get("/subscribers", async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.status(200).json(
-      Array.isArray(subscribers) ? subscribers : []
-    );
+    res.status(200).json(Array.isArray(subscribers) ? subscribers : []);
   } catch (err) {
     console.log("SUBSCRIBERS ERROR:", err);
 
@@ -330,11 +326,9 @@ app.post("/login", async (req, res) => {
 ========================= */
 
 app.get("/templates", (req, res) => {
-  res.status(200).json([
-    "Welcome Template",
-    "Offer Template",
-    "Festival Template",
-  ]);
+  res
+    .status(200)
+    .json(["Welcome Template", "Offer Template", "Festival Template"]);
 });
 
 /* =========================

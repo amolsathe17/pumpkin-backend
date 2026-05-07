@@ -350,18 +350,23 @@ const Admin = () => {
                 Export Excel
               </button>
 
-              <select
-                className="p-2 border rounded"
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-              >
-                <option value="">Select Template</option>
-                {templates.map((t, i) => (
-                  <option key={i} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+
+      <select
+        className="p-2 border rounded"
+        value={selectedTemplate}
+        onChange={(e) => setSelectedTemplate(e.target.value)}
+      >
+        <option value="">Select Template</option>
+
+        {templates.map((t, i) => (
+          <option
+            key={i}
+            value={typeof t === "object" ? t.title : t}
+          >
+            {typeof t === "object" ? t.title : t}
+          </option>
+        ))}
+      </select>
 
               <button
                 onClick={sendTemplate}
@@ -536,22 +541,6 @@ const Admin = () => {
         )}
       </div>
 
-      <select
-        className="p-2 border rounded"
-        value={selectedTemplate}
-        onChange={(e) => setSelectedTemplate(e.target.value)}
-      >
-        <option value="">Select Template</option>
-
-        {templates.map((t, i) => (
-          <option
-            key={i}
-            value={typeof t === "object" ? t.title : t}
-          >
-            {typeof t === "object" ? t.title : t}
-          </option>
-        ))}
-      </select>
     </>
   );
 };
