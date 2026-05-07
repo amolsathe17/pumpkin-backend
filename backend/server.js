@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
+
 require("dotenv").config();
 
 const app = express();
@@ -22,6 +24,18 @@ app.use(
 );
 
 app.use(express.json());
+
+/* =========================
+   EMAIL CONFIG
+========================= */
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 /* =========================
    MONGODB CONNECTION
@@ -76,30 +90,15 @@ app.get("/contact", async (req, res) => {
 // SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
-    // CHECK MONGODB
     if (mongoose.connection.readyState !== 1) {
-      console.log("MongoDB NOT Connected");
-
       return res.status(500).json({
         success: false,
         message: "MongoDB not connected",
       });
     }
 
-    const db = mongoose.connection.db;
-
-    if (!db) {
-      console.log("DB Undefined");
-
-      return res.status(500).json({
-        success: false,
-        message: "Database unavailable",
-      });
-    }
-
     const { name, email, message } = req.body;
 
-    // VALIDATION
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
@@ -107,15 +106,16 @@ app.post("/contact", async (req, res) => {
       });
     }
 
-    // SAVE DATA
-    const result = await db.collection("contacts").insertOne({
-      name,
-      email,
-      message,
-      important: false,
-      replied: false,
-      createdAt: new Date(),
-    });
+    const result = await mongoose.connection.db
+      .collection("contacts")
+      .insertOne({
+        name,
+        email,
+        message,
+        important: false,
+        replied: false,
+        createdAt: new Date(),
+      });
 
     console.log("CONTACT SAVED:", result);
 
@@ -124,11 +124,11 @@ app.post("/contact", async (req, res) => {
       message: "Message sent successfully",
     });
   } catch (err) {
-    console.log("CONTACT ERROR FULL:", err);
+    console.log("CONTACT ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      error: err.message,
+      message: err.message,
     });
   }
 });
@@ -144,7 +144,6 @@ app.delete("/contact", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Contact deleted",
     });
   } catch (err) {
     console.log("DELETE CONTACT ERROR:", err);
@@ -237,7 +236,9 @@ app.get("/subscribers", async (req, res) => {
       .toArray();
 
     return res.status(200).json(
-      Array.isArray(subscribers) ? subscribers : []
+      Array.isArray(subscribers)
+        ? subscribers
+        : []
     );
   } catch (err) {
     console.log("SUBSCRIBERS FETCH ERROR:", err);
@@ -267,9 +268,11 @@ app.post("/subscribe", async (req, res) => {
 
     const db = mongoose.connection.db;
 
-    const existing = await db.collection("subscribers").findOne({
-      email,
-    });
+    const existing = await db
+      .collection("subscribers")
+      .findOne({
+        email,
+      });
 
     if (existing) {
       return res.status(200).json({
@@ -278,10 +281,12 @@ app.post("/subscribe", async (req, res) => {
       });
     }
 
-    const result = await db.collection("subscribers").insertOne({
-      email,
-      createdAt: new Date(),
-    });
+    const result = await db
+      .collection("subscribers")
+      .insertOne({
+        email,
+        createdAt: new Date(),
+      });
 
     console.log("SUBSCRIBER SAVED:", result);
 
@@ -304,13 +309,14 @@ app.delete("/subscribers", async (req, res) => {
   try {
     const { id } = req.query;
 
-    await mongoose.connection.db.collection("subscribers").deleteOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
+    await mongoose.connection.db
+      .collection("subscribers")
+      .deleteOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
 
     return res.status(200).json({
       success: true,
-      message: "Subscriber deleted",
     });
   } catch (err) {
     console.log("DELETE SUBSCRIBER ERROR:", err);
@@ -329,7 +335,10 @@ app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (username === "admin" && password === "1234") {
+    if (
+      username === "admin" &&
+      password === "1234"
+    ) {
       return res.status(200).json({
         success: true,
         token: "admin123",
@@ -338,7 +347,8 @@ app.post("/login", async (req, res) => {
 
     return res.status(401).json({
       success: false,
-      message: "Invalid username or password",
+      message:
+        "Invalid username or password",
     });
   } catch (err) {
     console.log("LOGIN ERROR:", err);
@@ -368,15 +378,139 @@ app.get("/templates", (req, res) => {
 
 app.post("/send-template", async (req, res) => {
   try {
+    const { templateName, subscribers } =
+      req.body;
+
+    if (!templateName) {
+      return res.status(400).json({
+        success: false,
+        message: "Template required",
+      });
+    }
+
+    if (
+      !subscribers ||
+      subscribers.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "No subscribers found",
+      });
+    }
+
+    let subject = "";
+    let html = "";
+
+    // =========================
+    // WELCOME TEMPLATE
+    // =========================
+
+    if (
+      templateName ===
+      "Welcome Template"
+    ) {
+      subject =
+        "Welcome To Pumpkin Pictures 🎉";
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Welcome To Pumpkin Pictures</h1>
+
+          <p>
+            Thank you for subscribing to our newsletter.
+          </p>
+
+          <p>
+            Stay connected for latest travel offers and updates.
+          </p>
+
+          <h3>Thank You ❤️</h3>
+        </div>
+      `;
+    }
+
+    // =========================
+    // OFFER TEMPLATE
+    // =========================
+
+    else if (
+      templateName ===
+      "Offer Template"
+    ) {
+      subject =
+        "Special Travel Offer ✈️";
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Special Offer</h1>
+
+          <p>
+            Get amazing discounts on your next holiday package.
+          </p>
+
+          <h3>Book Your Trip Now 🚀</h3>
+        </div>
+      `;
+    }
+
+    // =========================
+    // FESTIVAL TEMPLATE
+    // =========================
+
+    else if (
+      templateName ===
+      "Festival Template"
+    ) {
+      subject =
+        "Festival Holiday Packages 🎊";
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Festival Packages</h1>
+
+          <p>
+            Enjoy special festive travel deals with family and friends.
+          </p>
+
+          <h3>Limited Seats Available ✨</h3>
+        </div>
+      `;
+    }
+
+    // =========================
+    // SEND EMAILS
+    // =========================
+
+    for (const user of subscribers) {
+      if (!user?.email) continue;
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject,
+        html,
+      });
+
+      console.log(
+        "EMAIL SENT TO:",
+        user.email
+      );
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Template sent successfully",
+      message:
+        "Template sent successfully",
     });
   } catch (err) {
-    console.log("SEND TEMPLATE ERROR:", err);
+    console.log(
+      "SEND TEMPLATE ERROR:",
+      err
+    );
 
     return res.status(500).json({
       success: false,
+      message: err.message,
     });
   }
 });
@@ -387,6 +521,30 @@ app.post("/send-template", async (req, res) => {
 
 app.post("/reply", async (req, res) => {
   try {
+    const { email, message } = req.body;
+
+    if (!email || !message) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Email and message required",
+      });
+    }
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject:
+        "Reply From Pumpkin Pictures",
+      html: `
+        <div style="font-family:Arial;padding:20px">
+          <h2>Reply From Pumpkin Pictures</h2>
+
+          <p>${message}</p>
+        </div>
+      `,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Reply sent successfully",
@@ -396,6 +554,7 @@ app.post("/reply", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+      message: err.message,
     });
   }
 });
@@ -406,12 +565,15 @@ app.post("/reply", async (req, res) => {
 
 app.get("/export", async (req, res) => {
   try {
-    const subscribers = await mongoose.connection.db
-      .collection("subscribers")
-      .find({})
-      .toArray();
+    const subscribers =
+      await mongoose.connection.db
+        .collection("subscribers")
+        .find({})
+        .toArray();
 
-    return res.status(200).json(subscribers);
+    return res.status(200).json(
+      subscribers
+    );
   } catch (err) {
     console.log("EXPORT ERROR:", err);
 
@@ -428,5 +590,7 @@ app.get("/export", async (req, res) => {
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Server running on port ${PORT}`
+  );
 });
