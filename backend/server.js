@@ -76,7 +76,10 @@ app.get("/contact", async (req, res) => {
 // SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
+    // CHECK MONGODB
     if (mongoose.connection.readyState !== 1) {
+      console.log("MongoDB NOT Connected");
+
       return res.status(500).json({
         success: false,
         message: "MongoDB not connected",
@@ -85,31 +88,47 @@ app.post("/contact", async (req, res) => {
 
     const db = mongoose.connection.db;
 
-    const contactData = {
-      name: req.body.name || "",
-      email: req.body.email || "",
-      message: req.body.message || "",
+    if (!db) {
+      console.log("DB Undefined");
+
+      return res.status(500).json({
+        success: false,
+        message: "Database unavailable",
+      });
+    }
+
+    const { name, email, message } = req.body;
+
+    // VALIDATION
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required",
+      });
+    }
+
+    // SAVE DATA
+    const result = await db.collection("contacts").insertOne({
+      name,
+      email,
+      message,
       important: false,
       replied: false,
       createdAt: new Date(),
-    };
-
-    const result = await db
-      .collection("contacts")
-      .insertOne(contactData);
+    });
 
     console.log("CONTACT SAVED:", result);
 
     return res.status(200).json({
       success: true,
-      message: "Contact saved successfully",
+      message: "Message sent successfully",
     });
   } catch (err) {
-    console.log("CONTACT SAVE ERROR:", err);
+    console.log("CONTACT ERROR FULL:", err);
 
     return res.status(500).json({
       success: false,
-      message: err.message,
+      error: err.message,
     });
   }
 });
