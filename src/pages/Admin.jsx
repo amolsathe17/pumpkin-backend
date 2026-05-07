@@ -53,7 +53,7 @@ const Admin = () => {
   // =========================
   const fetchUsers = async () => {
     try {
-      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//subscribers", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/subscribers", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -75,7 +75,7 @@ const Admin = () => {
   // =========================
   const fetchContacts = async () => {
     try {
-      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//contact", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/contact", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +102,7 @@ const Admin = () => {
   // =========================
   const fetchTemplates = async () => {
     try {
-      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//templates", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/templates", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -132,7 +132,7 @@ const Admin = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete subscriber?")) return;
 
-    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//subscribers?id=${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/subscribers?id=${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -146,7 +146,7 @@ const Admin = () => {
   const deleteContact = async (id) => {
     if (!window.confirm("Delete message?")) return;
 
-    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact?id=${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/contact?id=${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -158,7 +158,7 @@ const Admin = () => {
   // TOGGLE IMPORTANT
   // =========================
   const toggleImportant = async (id) => {
-    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact-important?id=${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/contact-important?id=${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -170,7 +170,7 @@ const Admin = () => {
   // MARK REPLIED
   // =========================
   const markReplied = async (id) => {
-    await fetch(`https://pumpkin-backend-production-1df8.up.railway.app//contact-replied?id=${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/contact-replied?id=${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -186,7 +186,7 @@ const Admin = () => {
 
     setLoading(true);
 
-    await fetch("https://pumpkin-backend-production-1df8.up.railway.app//send-template", {
+    await fetch("${import.meta.env.VITE_API_URL}/send-template", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -207,7 +207,7 @@ const Admin = () => {
   // =========================
   const handleExport = async () => {
     try {
-      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//export", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/export", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -236,7 +236,7 @@ const Admin = () => {
   const sendReply = async () => {
     if (!replyMessage) return showModal("Write message", "error");
 
-    await fetch("https://pumpkin-backend-production-1df8.up.railway.app//reply", {
+    await fetch("${import.meta.env.VITE_API_URL}/reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

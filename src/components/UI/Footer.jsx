@@ -41,7 +41,7 @@ export const Footers = () => {
     try {
       setLoading(true);
 
-      const res = await fetch("https://pumpkin-backend-production-1df8.up.railway.app//subscribe", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/subscribe", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
