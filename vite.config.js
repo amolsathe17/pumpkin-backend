@@ -11,10 +11,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   
   server: {
-    allowedHosts: ["frontend-production-e755a.up.railway.app"],
+    host: "0.0.0.0",
+    allowedHosts: true,
   },
 
   preview: {
-    allowedHosts: ["frontend-production-e755a.up.railway.app"],
+    host: "0.0.0.0",
+    allowedHosts: true,
   },
 });
