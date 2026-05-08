@@ -62,7 +62,9 @@ const Admin = () => {
   const fetchUsers = async () => {
     try {
       const res = await fetch(`${API}/subscribers`);
+
       const data = await res.json();
+
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("SUBSCRIBERS ERROR:", err);
@@ -76,13 +78,13 @@ const Admin = () => {
   const fetchContacts = async () => {
     try {
       const res = await fetch(`${API}/contact`);
+
       const data = await res.json();
 
       const safeData = Array.isArray(data) ? data : [];
 
       if (prevContactsRef.current.length > 0) {
-        const diff =
-          safeData.length - prevContactsRef.current.length;
+        const diff = safeData.length - prevContactsRef.current.length;
 
         if (diff > 0) {
           setNotificationCount((prev) => prev + diff);
@@ -90,6 +92,7 @@ const Admin = () => {
       }
 
       prevContactsRef.current = safeData;
+
       setContacts(safeData);
     } catch (err) {
       console.log("CONTACT ERROR:", err);
@@ -98,14 +101,19 @@ const Admin = () => {
   };
 
   // =========================
-  // FETCH TEMPLATES (FIXED)
+  // FETCH TEMPLATES
   // =========================
   const fetchTemplates = async () => {
     try {
       const res = await fetch(`${API}/templates`);
+
       const data = await res.json();
 
-      setTemplates(Array.isArray(data) ? data : []);
+      const safeTemplates = Array.isArray(data)
+        ? data.map((t) => (typeof t === "object" ? t.name || "" : t))
+        : [];
+
+      setTemplates(safeTemplates);
     } catch (err) {
       console.log("TEMPLATE ERROR:", err);
       setTemplates([]);
@@ -130,7 +138,71 @@ const Admin = () => {
   }, [search, usersPerPage]);
 
   // =========================
-  // SEND TEMPLATE (FIXED SAFE VALUE)
+  // DELETE SUBSCRIBER
+  // =========================
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete subscriber?")) return;
+
+    try {
+      await fetch(`${API}/subscribers?id=${id}`, {
+        method: "DELETE",
+      });
+
+      fetchUsers();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // DELETE CONTACT
+  // =========================
+  const deleteContact = async (id) => {
+    if (!window.confirm("Delete message?")) return;
+
+    try {
+      await fetch(`${API}/contact?id=${id}`, {
+        method: "DELETE",
+      });
+
+      fetchContacts();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // TOGGLE IMPORTANT
+  // =========================
+  const toggleImportant = async (id) => {
+    try {
+      await fetch(`${API}/contact-important?id=${id}`, {
+        method: "PUT",
+      });
+
+      fetchContacts();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // MARK REPLIED
+  // =========================
+  const markReplied = async (id) => {
+    try {
+      await fetch(`${API}/contact-replied?id=${id}`, {
+        method: "PUT",
+      });
+
+      fetchContacts();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // =========================
+  // SEND TEMPLATE
   // =========================
   const sendTemplate = async () => {
     if (!selectedTemplate) {
@@ -154,21 +226,116 @@ const Admin = () => {
       showModal("Template sent successfully 🚀");
     } catch (err) {
       console.log(err);
+
       showModal("Failed to send template", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================
+  // EXPORT
+  // =========================
+  const handleExport = async () => {
+    try {
+      const res = await fetch(`${API}/export`);
+
+      const blob = await res.blob();
+
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = "subscribers.xlsx";
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+
+      showModal("Export successful ✅");
+    } catch (err) {
+      console.log(err);
+
+      showModal("Export failed", "error");
+    }
+  };
+
+  // =========================
+  // SEND REPLY
+  // =========================
+  const sendReply = async () => {
+    if (!replyMessage) {
+      return showModal("Write message", "error");
+    }
+
+    try {
+      await fetch(`${API}/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: replyBox?.email,
+          message: replyMessage,
+          id: replyBox?._id,
+        }),
+      });
+
+      showModal("Reply sent ✅");
+
+      setReplyBox(null);
+      setReplyMessage("");
+
+      fetchContacts();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const filteredUsers = users.filter((u) =>
+    (u?.email || "").toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const filteredContacts = contacts.filter((c) =>
+    (c?.email || "").toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const perPage = Number(usersPerPage);
+
+  const userIndexOfLast = currentPage * perPage;
+
+  const userIndexOfFirst = userIndexOfLast - perPage;
+
+  const currentUsers = filteredUsers.slice(userIndexOfFirst, userIndexOfLast);
+
+  const contactIndexOfLast = currentPage * perPage;
+
+  const contactIndexOfFirst = contactIndexOfLast - perPage;
+
+  const currentContacts = filteredContacts.slice(
+    contactIndexOfFirst,
+    contactIndexOfLast,
+  );
+
+  const totalPages = Math.ceil(filteredUsers.length / perPage) || 1;
+
+  const barData = [
+    { name: "Total", value: users.length },
+    { name: "Filtered", value: filteredUsers.length },
+  ];
+
+  const pieData = [
+    { name: "Total", value: users.length },
+    { name: "Filtered", value: filteredUsers.length },
+  ];
+
+  const COLORS = ["#3b82f6", "#22c55e"];
 
   return (
     <>
-<div className="min-h-screen relative">
+      <div className="min-h-screen relative">
         <div className="absolute inset-0">
-          <img
-            src="./maldives.jpg"
-            className="w-full h-full object-cover"
-          />
+          <img src="./maldives.jpg" className="w-full h-full object-cover" />
         </div>
 
         <div className="absolute inset-0 bg-black/40"></div>
@@ -176,9 +343,7 @@ const Admin = () => {
         <div className="relative z-10 pt-20">
           {/* HEADER */}
           <div className="flex justify-between max-w-7xl mx-auto px-4 py-4">
-            <h1 className="text-3xl font-bold text-white">
-              Admin Dashboard
-            </h1>
+            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 
             <button
               onClick={() => {
@@ -200,10 +365,7 @@ const Admin = () => {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar
-                    dataKey="value"
-                    fill="#3b82f6"
-                  />
+                  <Bar dataKey="value" fill="#3b82f6" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -211,18 +373,9 @@ const Admin = () => {
             <div className="bg-white opacity-80 pr-3 pt-3 rounded-xl shadow flex items-center justify-center">
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    outerRadius={90}
-                  >
+                  <Pie data={pieData} dataKey="value" outerRadius={90}>
                     {pieData.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          COLORS[i % COLORS.length]
-                        }
-                      />
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
 
@@ -242,15 +395,9 @@ const Admin = () => {
               <select
                 className="p-2 border rounded"
                 value={selectedTemplate}
-                onChange={(e) =>
-                  setSelectedTemplate(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setSelectedTemplate(e.target.value)}
               >
-                <option value="">
-                  Select Template
-                </option>
+                <option value="">Select Template</option>
 
                 {templates.map((t, i) => (
                   <option key={i} value={t}>
@@ -263,43 +410,31 @@ const Admin = () => {
                 onClick={sendTemplate}
                 className="bg-purple-600 text-white py-2 rounded cursor-pointer"
               >
-                {loading
-                  ? "Sending..."
-                  : "Send Template"}
+                {loading ? "Sending..." : "Send Template"}
               </button>
 
               <input
                 type="text"
                 placeholder="Search email..."
                 className="p-2 border rounded"
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
+                onChange={(e) => setSearch(e.target.value)}
               />
 
               <select
                 className="p-2 border rounded"
                 value={usersPerPage}
                 onChange={(e) => {
-                  const value = parseInt(
-                    e.target.value
-                  );
+                  const value = parseInt(e.target.value);
 
                   setUsersPerPage(value);
                   setCurrentPage(1);
                 }}
               >
-                <option value={5}>
-                  5 / page
-                </option>
+                <option value={5}>5 / page</option>
 
-                <option value={10}>
-                  10 / page
-                </option>
+                <option value={10}>10 / page</option>
 
-                <option value={20}>
-                  20 / page
-                </option>
+                <option value={20}>20 / page</option>
               </select>
             </div>
           </div>
@@ -308,9 +443,7 @@ const Admin = () => {
           <div className="grid md:grid-cols-2 gap-2 max-w-7xl mx-auto mb-2 px-4 py-4 bg-black opacity-75 rounded-xl shadow">
             {/* SUBSCRIBERS */}
             <div className="space-y-2">
-              <h2 className="text-white text-xl font-semibold">
-                Subscribers
-              </h2>
+              <h2 className="text-white text-xl font-semibold">Subscribers</h2>
 
               {currentUsers.map((user, i) => (
                 <div
@@ -318,15 +451,11 @@ const Admin = () => {
                   className="flex justify-between bg-white p-4 rounded shadow"
                 >
                   <div>
-                    #
-                    {userIndexOfFirst + i + 1} —{" "}
-                    {user?.email || "No Email"}
+                    #{userIndexOfFirst + i + 1} — {user?.email || "No Email"}
                   </div>
 
                   <button
-                    onClick={() =>
-                      handleDelete(user?._id)
-                    }
+                    onClick={() => handleDelete(user?._id)}
                     className="btn btn-secondary cursor-pointer"
                   >
                     Delete
@@ -343,66 +472,42 @@ const Admin = () => {
 
               {currentContacts.map((c, i) => (
                 <div
-                  key={
-                    c?._id ||
-                    contactIndexOfFirst + i
-                  }
+                  key={c?._id || contactIndexOfFirst + i}
                   className="bg-white p-4 rounded shadow flex justify-between"
                 >
                   <div>
                     <div>
-                      #
-                      {contactIndexOfFirst +
-                        i +
-                        1}{" "}
-                      —{" "}
-                      <b>
-                        {c?.name || "No Name"}
-                      </b>{" "}
-                      (
-                      {c?.email ||
-                        "No Email"}
-                      )
+                      #{contactIndexOfFirst + i + 1} —{" "}
+                      <b>{c?.name || "No Name"}</b> ({c?.email || "No Email"})
                     </div>
 
-                    <div>
-                      {c?.message ||
-                        "No Message"}
-                    </div>
+                    <div>{c?.message || "No Message"}</div>
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
                     <button
-                      onClick={() =>
-                        setReplyBox(c)
-                      }
+                      onClick={() => setReplyBox(c)}
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Mail size={16} />
                     </button>
 
                     <button
-                      onClick={() =>
-                        toggleImportant(c?._id)
-                      }
+                      onClick={() => toggleImportant(c?._id)}
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Star size={16} />
                     </button>
 
                     <button
-                      onClick={() =>
-                        markReplied(c?._id)
-                      }
+                      onClick={() => markReplied(c?._id)}
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Check size={16} />
                     </button>
 
                     <button
-                      onClick={() =>
-                        deleteContact(c?._id)
-                      }
+                      onClick={() => deleteContact(c?._id)}
                       className="btn btn-secondary cursor-pointer"
                     >
                       <Trash size={16} />
@@ -417,26 +522,18 @@ const Admin = () => {
           {replyBox && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
               <div className="bg-white p-6 rounded-xl w-full max-w-md">
-                <h2 className="text-lg mb-3">
-                  Reply to {replyBox?.email}
-                </h2>
+                <h2 className="text-lg mb-3">Reply to {replyBox?.email}</h2>
 
                 <textarea
                   rows="4"
                   className="w-full p-2 border rounded mb-4"
                   value={replyMessage}
-                  onChange={(e) =>
-                    setReplyMessage(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setReplyMessage(e.target.value)}
                 />
 
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={() =>
-                      setReplyBox(null)
-                    }
+                    onClick={() => setReplyBox(null)}
                     className="px-4 py-2 bg-gray-400 rounded"
                   >
                     Cancel
@@ -456,30 +553,18 @@ const Admin = () => {
           {/* PAGINATION */}
           <div className="flex justify-center mt-6 pb-6 gap-2 text-white">
             <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.max(p - 1, 1)
-                )
-              }
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               className="px-3 py-1 bg-white text-black rounded cursor-pointer"
             >
               ◀
             </button>
 
             <span className="px-3 py-1">
-              Page {currentPage} /{" "}
-              {totalPages}
+              Page {currentPage} / {totalPages}
             </span>
 
             <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(
-                    p + 1,
-                    totalPages
-                  )
-                )
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               className="px-3 py-1 bg-white text-black rounded cursor-pointer"
             >
               ▶
@@ -492,14 +577,10 @@ const Admin = () => {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl w-full max-w-sm text-center">
               <h2 className="text-lg font-semibold mb-3">
-                {modal.type === "error"
-                  ? "Error ❌"
-                  : "Success ✅"}
+                {modal.type === "error" ? "Error ❌" : "Success ✅"}
               </h2>
 
-              <p className="mb-4">
-                {modal.message}
-              </p>
+              <p className="mb-4">{modal.message}</p>
 
               <button
                 onClick={() =>
