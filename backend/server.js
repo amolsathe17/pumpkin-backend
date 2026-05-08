@@ -13,7 +13,8 @@ const app = express();
 
 app.use(cors());
 
-app.options("/*", cors());
+// FIX ONLY (Node 22 safe wildcard)
+app.options(/.*/, cors());
 
 app.use(express.json());
 
@@ -37,9 +38,7 @@ if (
 
   console.log("Email Service Ready ✅");
 } else {
-  console.log(
-    "EMAIL_USER or EMAIL_PASS missing ❌"
-  );
+  console.log("EMAIL_USER or EMAIL_PASS missing ❌");
 }
 
 /* =========================
@@ -69,7 +68,6 @@ app.get("/", (req, res) => {
    CONTACT ROUTES
 ========================= */
 
-// GET CONTACTS
 app.get("/contact", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -92,7 +90,6 @@ app.get("/contact", async (req, res) => {
   }
 });
 
-// SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -138,7 +135,6 @@ app.post("/contact", async (req, res) => {
   }
 });
 
-// DELETE CONTACT
 app.delete("/contact", async (req, res) => {
   try {
     const { id } = req.query;
@@ -237,7 +233,6 @@ app.put("/contact-replied", async (req, res) => {
    SUBSCRIBERS ROUTES
 ========================= */
 
-// GET SUBSCRIBERS
 app.get("/subscribers", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -266,7 +261,6 @@ app.get("/subscribers", async (req, res) => {
   }
 });
 
-// SAVE SUBSCRIBER
 app.post("/subscribe", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -289,9 +283,7 @@ app.post("/subscribe", async (req, res) => {
 
     const existing = await db
       .collection("subscribers")
-      .findOne({
-        email,
-      });
+      .findOne({ email });
 
     if (existing) {
       return res.status(200).json({
@@ -300,57 +292,21 @@ app.post("/subscribe", async (req, res) => {
       });
     }
 
-    const result = await db
-      .collection("subscribers")
-      .insertOne({
-        email,
-        createdAt: new Date(),
-      });
-
-    console.log(
-      "SUBSCRIBER SAVED:",
-      result
-    );
+    await db.collection("subscribers").insertOne({
+      email,
+      createdAt: new Date(),
+    });
 
     return res.status(200).json({
       success: true,
       message: "Subscribed successfully",
     });
   } catch (err) {
-    console.log(
-      "SUBSCRIBE SAVE ERROR:",
-      err
-    );
+    console.log("SUBSCRIBE ERROR:", err);
 
     return res.status(500).json({
       success: false,
       message: err.message,
-    });
-  }
-});
-
-// DELETE SUBSCRIBER
-app.delete("/subscribers", async (req, res) => {
-  try {
-    const { id } = req.query;
-
-    await mongoose.connection.db
-      .collection("subscribers")
-      .deleteOne({
-        _id: new mongoose.Types.ObjectId(id),
-      });
-
-    return res.status(200).json({
-      success: true,
-    });
-  } catch (err) {
-    console.log(
-      "DELETE SUBSCRIBER ERROR:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
     });
   }
 });
@@ -361,13 +317,9 @@ app.delete("/subscribers", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, password } =
-      req.body;
+    const { username, password } = req.body;
 
-    if (
-      username === "admin" &&
-      password === "1234"
-    ) {
+    if (username === "admin" && password === "1234") {
       return res.status(200).json({
         success: true,
         token: "admin123",
@@ -376,8 +328,7 @@ app.post("/login", async (req, res) => {
 
     return res.status(401).json({
       success: false,
-      message:
-        "Invalid username or password",
+      message: "Invalid username or password",
     });
   } catch (err) {
     console.log("LOGIN ERROR:", err);
@@ -405,89 +356,69 @@ app.get("/templates", (req, res) => {
    SEND TEMPLATE
 ========================= */
 
-app.post(
-  "/send-template",
-  async (req, res) => {
-    try {
-      if (!transporter) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "Email service not configured",
-        });
-      }
-
-      const {
-        templateName,
-        subscribers,
-      } = req.body;
-
-      if (!templateName) {
-        return res.status(400).json({
-          success: false,
-          message: "Template required",
-        });
-      }
-
-      if (
-        !subscribers ||
-        subscribers.length === 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "No subscribers found",
-        });
-      }
-
-      let subject = "";
-      let html = "";
-
-      if (templateName === "Welcome Template") {
-        subject = "Welcome To Pumpkin Pictures 🎉";
-        html = `<div style="font-family:Arial;padding:20px">
-          <h1>Welcome To Pumpkin Pictures</h1>
-          <p>Thank you for subscribing.</p>
-        </div>`;
-      } else if (templateName === "Offer Template") {
-        subject = "Special Travel Offer ✈️";
-        html = `<div style="font-family:Arial;padding:20px">
-          <h1>Special Offer</h1>
-          <p>Get discounts on travel packages.</p>
-        </div>`;
-      } else if (templateName === "Festival Template") {
-        subject = "Festival Holiday Packages 🎊";
-        html = `<div style="font-family:Arial;padding:20px">
-          <h1>Festival Packages</h1>
-          <p>Enjoy festive travel deals.</p>
-        </div>`;
-      }
-
-      for (const user of subscribers) {
-        if (!user?.email) continue;
-
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject,
-          html,
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Template sent successfully",
-      });
-    } catch (err) {
-      console.log("SEND TEMPLATE ERROR:", err);
-
+app.post("/send-template", async (req, res) => {
+  try {
+    if (!transporter) {
       return res.status(500).json({
         success: false,
-        message: err.message,
+        message: "Email service not configured",
       });
     }
+
+    const { templateName, subscribers } = req.body;
+
+    if (!templateName) {
+      return res.status(400).json({
+        success: false,
+        message: "Template required",
+      });
+    }
+
+    if (!subscribers || subscribers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No subscribers found",
+      });
+    }
+
+    let subject = "";
+    let html = "";
+
+    if (templateName === "Welcome Template") {
+      subject = "Welcome To Pumpkin Pictures 🎉";
+      html = `<div>Welcome</div>`;
+    } else if (templateName === "Offer Template") {
+      subject = "Special Offer ✈️";
+      html = `<div>Offer</div>`;
+    } else if (templateName === "Festival Template") {
+      subject = "Festival 🎊";
+      html = `<div>Festival</div>`;
+    }
+
+    for (const user of subscribers) {
+      if (!user?.email) continue;
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject,
+        html,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Template sent successfully",
+    });
+  } catch (err) {
+    console.log("SEND TEMPLATE ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-);
+});
 
 /* =========================
    REPLY
@@ -507,16 +438,11 @@ app.post("/reply", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Reply From Pumpkin Pictures",
-      html: `<div style="font-family:Arial;padding:20px">
-        <h2>Reply</h2>
-        <p>${message}</p>
-      </div>`,
+      subject: "Reply",
+      html: `<div>${message}</div>`,
     });
 
-    return res.status(200).json({
-      success: true,
-    });
+    return res.status(200).json({ success: true });
   } catch (err) {
     console.log("REPLY ERROR:", err);
 
@@ -549,7 +475,7 @@ app.get("/export", async (req, res) => {
 });
 
 /* =========================
-   404 HANDLER (SAFE)
+   404 HANDLER
 ========================= */
 
 app.use((req, res) => {
@@ -563,11 +489,8 @@ app.use((req, res) => {
    SERVER
 ========================= */
 
-const PORT =
-  process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
+  console.log(`Server running on port ${PORT}`);
 });
