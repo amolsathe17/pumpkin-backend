@@ -61,11 +61,7 @@ const Admin = () => {
   // =========================
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API}/subscribers`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`${API}/subscribers`);
 
       const data = await res.json();
 
@@ -81,11 +77,7 @@ const Admin = () => {
   // =========================
   const fetchContacts = async () => {
     try {
-      const res = await fetch(`${API}/contact`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`${API}/contact`);
 
       const data = await res.json();
 
@@ -114,11 +106,7 @@ const Admin = () => {
   // =========================
   const fetchTemplates = async () => {
     try {
-      const res = await fetch(`${API}/templates`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`${API}/templates`);
 
       const data = await res.json();
 
@@ -161,9 +149,6 @@ const Admin = () => {
     try {
       await fetch(`${API}/subscribers?id=${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       fetchUsers();
@@ -181,9 +166,6 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact?id=${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       fetchContacts();
@@ -199,9 +181,6 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact-important?id=${id}`, {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       fetchContacts();
@@ -217,9 +196,6 @@ const Admin = () => {
     try {
       await fetch(`${API}/contact-replied?id=${id}`, {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       fetchContacts();
@@ -233,10 +209,7 @@ const Admin = () => {
   // =========================
   const sendTemplate = async () => {
     if (!selectedTemplate) {
-      return showModal(
-        "Select template first",
-        "error"
-      );
+      return showModal("Select template first", "error");
     }
 
     try {
@@ -246,7 +219,6 @@ const Admin = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           templateName: selectedTemplate,
@@ -258,10 +230,7 @@ const Admin = () => {
     } catch (err) {
       console.log(err);
 
-      showModal(
-        "Failed to send template",
-        "error"
-      );
+      showModal("Failed to send template", "error");
     } finally {
       setLoading(false);
     }
@@ -272,16 +241,7 @@ const Admin = () => {
   // =========================
   const handleExport = async () => {
     try {
-      const res = await fetch(`${API}/export`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error();
-      }
+      const res = await fetch(`${API}/export`);
 
       const blob = await res.blob();
 
@@ -308,10 +268,7 @@ const Admin = () => {
   // =========================
   const sendReply = async () => {
     if (!replyMessage) {
-      return showModal(
-        "Write message",
-        "error"
-      );
+      return showModal("Write message", "error");
     }
 
     try {
@@ -319,7 +276,6 @@ const Admin = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           email: replyBox?.email,
@@ -339,45 +295,28 @@ const Admin = () => {
     }
   };
 
-  // =========================
-  // FILTER USERS
-  // =========================
   const filteredUsers = users.filter((u) =>
-    (u?.email || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    (u?.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // =========================
-  // FILTER CONTACTS
-  // =========================
   const filteredContacts = contacts.filter((c) =>
-    (c?.email || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    (c?.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // =========================
-  // PAGINATION
-  // =========================
   const perPage = Number(usersPerPage);
 
-  // USERS
   const userIndexOfLast = currentPage * perPage;
 
-  const userIndexOfFirst =
-    userIndexOfLast - perPage;
+  const userIndexOfFirst = userIndexOfLast - perPage;
 
   const currentUsers = filteredUsers.slice(
     userIndexOfFirst,
     userIndexOfLast
   );
 
-  // CONTACTS
   const contactIndexOfLast = currentPage * perPage;
 
-  const contactIndexOfFirst =
-    contactIndexOfLast - perPage;
+  const contactIndexOfFirst = contactIndexOfLast - perPage;
 
   const currentContacts = filteredContacts.slice(
     contactIndexOfFirst,
@@ -387,36 +326,21 @@ const Admin = () => {
   const totalPages =
     Math.ceil(filteredUsers.length / perPage) || 1;
 
-  // =========================
-  // CHARTS
-  // =========================
   const barData = [
-    {
-      name: "Total",
-      value: users.length,
-    },
-    {
-      name: "Filtered",
-      value: filteredUsers.length,
-    },
+    { name: "Total", value: users.length },
+    { name: "Filtered", value: filteredUsers.length },
   ];
 
   const pieData = [
-    {
-      name: "Total",
-      value: users.length,
-    },
-    {
-      name: "Filtered",
-      value: filteredUsers.length,
-    },
+    { name: "Total", value: users.length },
+    { name: "Filtered", value: filteredUsers.length },
   ];
 
   const COLORS = ["#3b82f6", "#22c55e"];
 
   return (
     <>
-      <div className="min-h-screen relative">
+<div className="min-h-screen relative">
         <div className="absolute inset-0">
           <img
             src="./maldives.jpg"
