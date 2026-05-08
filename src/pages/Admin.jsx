@@ -62,9 +62,7 @@ const Admin = () => {
   const fetchUsers = async () => {
     try {
       const res = await fetch(`${API}/subscribers`);
-
       const data = await res.json();
-
       setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("SUBSCRIBERS ERROR:", err);
@@ -78,7 +76,6 @@ const Admin = () => {
   const fetchContacts = async () => {
     try {
       const res = await fetch(`${API}/contact`);
-
       const data = await res.json();
 
       const safeData = Array.isArray(data) ? data : [];
@@ -93,7 +90,6 @@ const Admin = () => {
       }
 
       prevContactsRef.current = safeData;
-
       setContacts(safeData);
     } catch (err) {
       console.log("CONTACT ERROR:", err);
@@ -102,21 +98,14 @@ const Admin = () => {
   };
 
   // =========================
-  // FETCH TEMPLATES
+  // FETCH TEMPLATES (FIXED)
   // =========================
   const fetchTemplates = async () => {
     try {
       const res = await fetch(`${API}/templates`);
-
       const data = await res.json();
 
-      const safeTemplates = Array.isArray(data)
-        ? data.map((t) =>
-            typeof t === "object" ? t.title || "" : t
-          )
-        : [];
-
-      setTemplates(safeTemplates);
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("TEMPLATE ERROR:", err);
       setTemplates([]);
@@ -141,71 +130,7 @@ const Admin = () => {
   }, [search, usersPerPage]);
 
   // =========================
-  // DELETE SUBSCRIBER
-  // =========================
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete subscriber?")) return;
-
-    try {
-      await fetch(`${API}/subscribers?id=${id}`, {
-        method: "DELETE",
-      });
-
-      fetchUsers();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  // =========================
-  // DELETE CONTACT
-  // =========================
-  const deleteContact = async (id) => {
-    if (!window.confirm("Delete message?")) return;
-
-    try {
-      await fetch(`${API}/contact?id=${id}`, {
-        method: "DELETE",
-      });
-
-      fetchContacts();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  // =========================
-  // TOGGLE IMPORTANT
-  // =========================
-  const toggleImportant = async (id) => {
-    try {
-      await fetch(`${API}/contact-important?id=${id}`, {
-        method: "PUT",
-      });
-
-      fetchContacts();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  // =========================
-  // MARK REPLIED
-  // =========================
-  const markReplied = async (id) => {
-    try {
-      await fetch(`${API}/contact-replied?id=${id}`, {
-        method: "PUT",
-      });
-
-      fetchContacts();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  // =========================
-  // SEND TEMPLATE
+  // SEND TEMPLATE (FIXED SAFE VALUE)
   // =========================
   const sendTemplate = async () => {
     if (!selectedTemplate) {
@@ -229,114 +154,12 @@ const Admin = () => {
       showModal("Template sent successfully 🚀");
     } catch (err) {
       console.log(err);
-
       showModal("Failed to send template", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================
-  // EXPORT
-  // =========================
-  const handleExport = async () => {
-    try {
-      const res = await fetch(`${API}/export`);
-
-      const blob = await res.blob();
-
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-
-      a.href = url;
-      a.download = "subscribers.xlsx";
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-
-      showModal("Export successful ✅");
-    } catch (err) {
-      console.log(err);
-
-      showModal("Export failed", "error");
-    }
-  };
-
-  // =========================
-  // SEND REPLY
-  // =========================
-  const sendReply = async () => {
-    if (!replyMessage) {
-      return showModal("Write message", "error");
-    }
-
-    try {
-      await fetch(`${API}/reply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: replyBox?.email,
-          message: replyMessage,
-          id: replyBox?._id,
-        }),
-      });
-
-      showModal("Reply sent ✅");
-
-      setReplyBox(null);
-      setReplyMessage("");
-
-      fetchContacts();
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const filteredUsers = users.filter((u) =>
-    (u?.email || "").toLowerCase().includes(search.toLowerCase())
-  );
-
-  const filteredContacts = contacts.filter((c) =>
-    (c?.email || "").toLowerCase().includes(search.toLowerCase())
-  );
-
-  const perPage = Number(usersPerPage);
-
-  const userIndexOfLast = currentPage * perPage;
-
-  const userIndexOfFirst = userIndexOfLast - perPage;
-
-  const currentUsers = filteredUsers.slice(
-    userIndexOfFirst,
-    userIndexOfLast
-  );
-
-  const contactIndexOfLast = currentPage * perPage;
-
-  const contactIndexOfFirst = contactIndexOfLast - perPage;
-
-  const currentContacts = filteredContacts.slice(
-    contactIndexOfFirst,
-    contactIndexOfLast
-  );
-
-  const totalPages =
-    Math.ceil(filteredUsers.length / perPage) || 1;
-
-  const barData = [
-    { name: "Total", value: users.length },
-    { name: "Filtered", value: filteredUsers.length },
-  ];
-
-  const pieData = [
-    { name: "Total", value: users.length },
-    { name: "Filtered", value: filteredUsers.length },
-  ];
-
-  const COLORS = ["#3b82f6", "#22c55e"];
 
   return (
     <>

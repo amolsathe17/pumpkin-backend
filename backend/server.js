@@ -311,6 +311,27 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
+// DELETE SUBSCRIBER
+app.delete("/subscribers", async (req, res) => {
+  try {
+    const { id } = req.query;
+
+    await mongoose.connection.db.collection("subscribers").deleteOne({
+      _id: new mongoose.Types.ObjectId(id),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Subscriber deleted",
+    });
+  } catch (err) {
+    console.log("DELETE SUBSCRIBER ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+    });
+  }
+});
 /* =========================
    LOGIN
 ========================= */

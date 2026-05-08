@@ -1,5 +1,6 @@
-
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 
 exports.handler = async (event) => {
   try {
@@ -12,15 +13,23 @@ exports.handler = async (event) => {
       };
     }
 
-    // 🔴 IMPORTANT: Replace with your domain
-    const BASE_URL = `${import.meta.env.VITE_API_URL}/`;
+    // 📁 Load template from local folder
+    const templatePath = path.join(
+      __dirname,
+      "templates",
+      templateName
+    );
 
-    // ✅ Fetch HTML template from public folder
-    const htmlContent = await fetch(
-      `${BASE_URL}/templates/${templateName}`
-    ).then((res) => res.text());
+    if (!fs.existsSync(templatePath)) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Template not found" }),
+      };
+    }
 
-    // ✅ Gmail transporter
+    const htmlContent = fs.readFileSync(templatePath, "utf-8");
+
+    // 📧 Gmail transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -43,9 +52,10 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "Emails sent successfully" }),
+      body: JSON.stringify({
+        message: "Emails sent successfully",
+      }),
     };
-
   } catch (err) {
     console.error("SEND TEMPLATE ERROR:", err);
 
