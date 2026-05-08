@@ -367,9 +367,9 @@ app.post("/login", async (req, res) => {
 
 app.get("/templates", (req, res) => {
   return res.status(200).json([
-    "Welcome Template",
-    "Offer Template",
-    "Festival Template",
+    "Diwali Template",
+    "offer Template",
+    "offer1 Template",
   ]);
 });
 
@@ -405,13 +405,13 @@ app.post("/send-template", async (req, res) => {
     let subject = "";
     let html = "";
 
-    if (templateName === "Welcome Template") {
-      subject = "Welcome To Pumpkin Pictures 🎉";
+    if (templateName === "Diwali Template") {
+      subject = "Diwali Offers 🎉";
       html = `<div>Welcome</div>`;
-    } else if (templateName === "Offer Template") {
+    } else if (templateName === "offer Template") {
       subject = "Special Offer ✈️";
       html = `<div>Offer</div>`;
-    } else if (templateName === "Festival Template") {
+    } else if (templateName === "offer1 Template") {
       subject = "Festival 🎊";
       html = `<div>Festival</div>`;
     }

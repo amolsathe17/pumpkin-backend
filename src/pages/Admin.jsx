@@ -12,7 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Mail, Star, Check, Trash } from "lucide-react";
+import { Mail, Star, Check, Trash, ChevronLeft, ChevronRight, } from "lucide-react";
 
 const Admin = () => {
   const [users, setUsers] = useState([]);
@@ -30,6 +30,9 @@ const Admin = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage, setUsersPerPage] = useState(5);
+
+  // TAB STATE
+  const [activeTab, setActiveTab] = useState("subscribers");
 
   const [modal, setModal] = useState({
     show: false,
@@ -333,16 +336,16 @@ const Admin = () => {
 
   return (
     <>
-      <div className="min-h-screen relative">
-        <div className="absolute inset-0">
-          <img src="./maldives.jpg" className="w-full h-full object-cover" />
-        </div>
+      <div className="min-h-screen relative w-full">
+        {/* <div className="absolute inset-0">
+          <img src="./maldives.jpg" className="w-full h-full bg-fixed bg-center" />
+        </div> */}
 
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-emerald-700 to-cyan-400"></div>
 
         <div className="relative z-10 pt-20">
           {/* HEADER */}
-          <div className="flex justify-between max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between max-w-5xl mx-auto px-4 py-4">
             <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 
             <button
@@ -350,14 +353,14 @@ const Admin = () => {
                 localStorage.removeItem("token");
                 navigate("/login");
               }}
-              className="bg-red-500 px-4 py-2 rounded text-white cursor-pointer"
+              className="btn btn-secondary cursor-pointer"
             >
               Logout
             </button>
           </div>
 
           {/* TOP SECTION */}
-          <div className="grid md:grid-cols-3 gap-4 max-w-7xl mx-auto mb-1 px-4 py-4">
+          <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto mb-1 px-4 py-4">
             <div className="bg-white opacity-80 pr-3 pt-3 rounded-xl shadow flex items-center justify-center">
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={barData}>
@@ -439,83 +442,116 @@ const Admin = () => {
             </div>
           </div>
 
-          {/* DATA SECTION */}
-          <div className="grid md:grid-cols-2 gap-2 max-w-7xl mx-auto mb-2 px-4 py-4 bg-black opacity-75 rounded-xl shadow">
-            {/* SUBSCRIBERS */}
-            <div className="space-y-2">
-              <h2 className="text-white text-xl font-semibold">Subscribers</h2>
+          {/* TABS */}
+          <div className="max-w-5xl mx-auto px-4 mt-2 mb-2">
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => setActiveTab("subscribers")}
+                className={`px-4 py-2 rounded cursor-pointer ${
+                  activeTab === "subscribers"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-black"
+                }`}
+              >
+                Subscribers
+              </button>
 
-              {currentUsers.map((user, i) => (
-                <div
-                  key={user?._id || i}
-                  className="flex justify-between bg-white p-4 rounded shadow"
-                >
-                  <div>
-                    #{userIndexOfFirst + i + 1} — {user?.email || "No Email"}
-                  </div>
-
-                  <button
-                    onClick={() => handleDelete(user?._id)}
-                    className="btn btn-secondary cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
+              <button
+                onClick={() => setActiveTab("contacts")}
+                className={`px-4 py-2 rounded cursor-pointer ${
+                  activeTab === "contacts"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-black"
+                }`}
+              >
+                Messages Received From
+              </button>
             </div>
+          </div>
 
-            {/* CONTACTS */}
-            <div className="space-y-2">
-              <h2 className="text-white text-xl font-semibold">
-                Contact Messages
-              </h2>
+          {/* DATA SECTION */}
+          <div className="max-w-5xl mx-auto mb-2 my-4 px-4 py-4 bg-black opacity-75 rounded-xl shadow">
+            {/* SUBSCRIBERS */}
+            {activeTab === "subscribers" && (
+              <div className="space-y-2">
+                <h2 className="text-white text-xl font-semibold">
+                  Subscribers
+                </h2>
 
-              {currentContacts.map((c, i) => (
-                <div
-                  key={c?._id || contactIndexOfFirst + i}
-                  className="bg-white p-4 rounded shadow flex justify-between"
-                >
-                  <div>
+                {currentUsers.map((user, i) => (
+                  <div
+                    key={user?._id || i}
+                    className="flex justify-between bg-white p-4 rounded shadow"
+                  >
                     <div>
-                      #{contactIndexOfFirst + i + 1} —{" "}
-                      <b>{c?.name || "No Name"}</b> ({c?.email || "No Email"})
+                      #{userIndexOfFirst + i + 1} — {user?.email || "No Email"}
                     </div>
 
-                    <div>{c?.message || "No Message"}</div>
-                  </div>
-
-                  <div className="flex gap-2 flex-wrap">
                     <button
-                      onClick={() => setReplyBox(c)}
+                      onClick={() => handleDelete(user?._id)}
                       className="btn btn-secondary cursor-pointer"
                     >
-                      <Mail size={16} />
-                    </button>
-
-                    <button
-                      onClick={() => toggleImportant(c?._id)}
-                      className="btn btn-secondary cursor-pointer"
-                    >
-                      <Star size={16} />
-                    </button>
-
-                    <button
-                      onClick={() => markReplied(c?._id)}
-                      className="btn btn-secondary cursor-pointer"
-                    >
-                      <Check size={16} />
-                    </button>
-
-                    <button
-                      onClick={() => deleteContact(c?._id)}
-                      className="btn btn-secondary cursor-pointer"
-                    >
-                      <Trash size={16} />
+                      Delete
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* CONTACTS */}
+            {activeTab === "contacts" && (
+              <div className="space-y-2">
+                <h2 className="text-white text-xl font-semibold">
+                  Contact Messages
+                </h2>
+
+                {currentContacts.map((c, i) => (
+                  <div
+                    key={c?._id || contactIndexOfFirst + i}
+                    className="bg-white p-4 rounded shadow flex justify-between"
+                  >
+                    <div>
+                      <div>
+                        #{contactIndexOfFirst + i + 1} —{" "}
+                        <b>{c?.name || "No Name"}</b> ({c?.email || "No Email"})
+                      </div>
+
+                      <div>{c?.message || "No Message"}</div>
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => setReplyBox(c)}
+                        className="btn btn-secondary cursor-pointer"
+                      >
+                        <Mail size={16} />
+                      </button>
+
+                      {/* <button
+                        onClick={() => toggleImportant(c?._id)}
+                        className="btn btn-secondary cursor-pointer"
+                      >
+                        <Star size={16} />
+                      </button> */}
+
+                      {/* <button
+                        onClick={() => markReplied(c?._id)}
+                        className="btn btn-secondary cursor-pointer"
+                      >
+                        <Check size={16} />
+                      </button> */}
+
+                      <button
+                        onClick={() => deleteContact(c?._id)}
+                        className="btn btn-secondary cursor-pointer"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* REPLY MODAL */}
@@ -551,12 +587,12 @@ const Admin = () => {
           )}
 
           {/* PAGINATION */}
-          <div className="flex justify-center mt-6 pb-6 gap-2 text-white">
+          <div className="flex justify-center mt-6 pb-6 gap-2 text-black">
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              className="px-3 py-1 bg-white text-black rounded cursor-pointer"
+              className="btn-secondary p-3 rounded-full cursor-pointer"
             >
-              ◀
+            <ChevronLeft />
             </button>
 
             <span className="px-3 py-1">
@@ -565,9 +601,9 @@ const Admin = () => {
 
             <button
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              className="px-3 py-1 bg-white text-black rounded cursor-pointer"
+              className="btn-secondary p-3 rounded-full cursor-pointer"
             >
-              ▶
+               <ChevronRight />
             </button>
           </div>
         </div>
