@@ -13,7 +13,7 @@ const app = express();
 
 app.use(cors());
 
-app.options("*", cors());
+app.options("/*", cors());
 
 app.use(express.json());
 
@@ -443,77 +443,25 @@ app.post(
       let subject = "";
       let html = "";
 
-      // WELCOME TEMPLATE
-
-      if (
-        templateName ===
-        "Welcome Template"
-      ) {
-        subject =
-          "Welcome To Pumpkin Pictures 🎉";
-
-        html = `
-        <div style="font-family:Arial;padding:20px">
+      if (templateName === "Welcome Template") {
+        subject = "Welcome To Pumpkin Pictures 🎉";
+        html = `<div style="font-family:Arial;padding:20px">
           <h1>Welcome To Pumpkin Pictures</h1>
-
-          <p>
-            Thank you for subscribing to our newsletter.
-          </p>
-
-          <p>
-            Stay connected for latest travel offers and updates.
-          </p>
-
-          <h3>Thank You ❤️</h3>
-        </div>
-      `;
-      }
-
-      // OFFER TEMPLATE
-
-      else if (
-        templateName ===
-        "Offer Template"
-      ) {
-        subject =
-          "Special Travel Offer ✈️";
-
-        html = `
-        <div style="font-family:Arial;padding:20px">
+          <p>Thank you for subscribing.</p>
+        </div>`;
+      } else if (templateName === "Offer Template") {
+        subject = "Special Travel Offer ✈️";
+        html = `<div style="font-family:Arial;padding:20px">
           <h1>Special Offer</h1>
-
-          <p>
-            Get amazing discounts on your next holiday package.
-          </p>
-
-          <h3>Book Your Trip Now 🚀</h3>
-        </div>
-      `;
-      }
-
-      // FESTIVAL TEMPLATE
-
-      else if (
-        templateName ===
-        "Festival Template"
-      ) {
-        subject =
-          "Festival Holiday Packages 🎊";
-
-        html = `
-        <div style="font-family:Arial;padding:20px">
+          <p>Get discounts on travel packages.</p>
+        </div>`;
+      } else if (templateName === "Festival Template") {
+        subject = "Festival Holiday Packages 🎊";
+        html = `<div style="font-family:Arial;padding:20px">
           <h1>Festival Packages</h1>
-
-          <p>
-            Enjoy special festive travel deals with family and friends.
-          </p>
-
-          <h3>Limited Seats Available ✨</h3>
-        </div>
-      `;
+          <p>Enjoy festive travel deals.</p>
+        </div>`;
       }
-
-      // SEND EMAILS
 
       for (const user of subscribers) {
         if (!user?.email) continue;
@@ -524,23 +472,14 @@ app.post(
           subject,
           html,
         });
-
-        console.log(
-          "EMAIL SENT TO:",
-          user.email
-        );
       }
 
       return res.status(200).json({
         success: true,
-        message:
-          "Template sent successfully",
+        message: "Template sent successfully",
       });
     } catch (err) {
-      console.log(
-        "SEND TEMPLATE ERROR:",
-        err
-      );
+      console.log("SEND TEMPLATE ERROR:", err);
 
       return res.status(500).json({
         success: false,
@@ -559,46 +498,30 @@ app.post("/reply", async (req, res) => {
     if (!transporter) {
       return res.status(500).json({
         success: false,
-        message:
-          "Email service not configured",
+        message: "Email service not configured",
       });
     }
 
-    const { email, message } =
-      req.body;
-
-    if (!email || !message) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Email and message required",
-      });
-    }
+    const { email, message } = req.body;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject:
-        "Reply From Pumpkin Pictures",
-      html: `
-      <div style="font-family:Arial;padding:20px">
-        <h2>Reply From Pumpkin Pictures</h2>
-
+      subject: "Reply From Pumpkin Pictures",
+      html: `<div style="font-family:Arial;padding:20px">
+        <h2>Reply</h2>
         <p>${message}</p>
-      </div>
-    `,
+      </div>`,
     });
 
     return res.status(200).json({
       success: true,
-      message: "Reply sent successfully",
     });
   } catch (err) {
     console.log("REPLY ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      message: err.message,
     });
   }
 });
@@ -615,9 +538,7 @@ app.get("/export", async (req, res) => {
         .find({})
         .toArray();
 
-    return res.status(200).json(
-      subscribers
-    );
+    return res.status(200).json(subscribers);
   } catch (err) {
     console.log("EXPORT ERROR:", err);
 
@@ -625,6 +546,17 @@ app.get("/export", async (req, res) => {
       success: false,
     });
   }
+});
+
+/* =========================
+   404 HANDLER (SAFE)
+========================= */
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
 });
 
 /* =========================
