@@ -7,28 +7,19 @@ require("dotenv").config();
 
 const app = express();
 
-app.set("trust proxy", 1);
-
 /* =========================
    MIDDLEWARE
 ========================= */
 
 app.use(
   cors({
-    origin: [
-      "https://frontend-production-e755a.up.railway.app",
-      "https://pumpkinpicturesllp.uk",
-      "https://www.pumpkinpicturesllp.uk",
-      "http://localhost:5173",
-      "www.pumpkinpicturesllp.uk",
-      "pumpkinpicturesllp.uk",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: true,
     credentials: true,
   })
 );
 
-app.options("*", cors());
+// FIX FOR NODE 22 / EXPRESS 5
+app.options(/.*/, cors());
 
 app.use(express.json());
 
@@ -79,20 +70,6 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   HEALTH
-========================= */
-
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    mongodb:
-      mongoose.connection.readyState === 1
-        ? "connected"
-        : "disconnected",
-  });
-});
-
-/* =========================
    CONTACT ROUTES
 ========================= */
 
@@ -138,7 +115,7 @@ app.post("/contact", async (req, res) => {
       });
     }
 
-    const result = await mongoose.connection.db
+    await mongoose.connection.db
       .collection("contacts")
       .insertOne({
         name,
@@ -148,8 +125,6 @@ app.post("/contact", async (req, res) => {
         replied: false,
         createdAt: new Date(),
       });
-
-    console.log("CONTACT SAVED:", result);
 
     return res.status(200).json({
       success: true,
@@ -170,13 +145,6 @@ app.delete("/contact", async (req, res) => {
   try {
     const { id } = req.query;
 
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "ID required",
-      });
-    }
-
     await mongoose.connection.db
       .collection("contacts")
       .deleteOne({
@@ -185,6 +153,7 @@ app.delete("/contact", async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      message: "Contact deleted",
     });
   } catch (err) {
     console.log("DELETE CONTACT ERROR:", err);
@@ -312,13 +281,10 @@ app.post("/subscribe", async (req, res) => {
 
     const { email } = req.body;
 
-    if (
-      !email ||
-      !email.includes("@")
-    ) {
+    if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Valid email required",
+        message: "Email required",
       });
     }
 
@@ -358,13 +324,6 @@ app.post("/subscribe", async (req, res) => {
 app.delete("/subscribers", async (req, res) => {
   try {
     const { id } = req.query;
-
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "ID required",
-      });
-    }
 
     await mongoose.connection.db
       .collection("subscribers")
@@ -424,8 +383,8 @@ app.post("/login", async (req, res) => {
 app.get("/templates", (req, res) => {
   return res.status(200).json([
     "Diwali Template",
-    "offer Template",
-    "offer1 Template",
+    "Offer Template",
+    "Festival Template",
   ]);
 });
 
@@ -451,10 +410,7 @@ app.post("/send-template", async (req, res) => {
       });
     }
 
-    if (
-      !subscribers ||
-      subscribers.length === 0
-    ) {
+    if (!subscribers || subscribers.length === 0) {
       return res.status(400).json({
         success: false,
         message: "No subscribers found",
@@ -464,59 +420,68 @@ app.post("/send-template", async (req, res) => {
     let subject = "";
     let html = "";
 
+    // TEMPLATE 1
     if (templateName === "Diwali Template") {
       subject = "Diwali Offers 🎉";
 
       html = `
         <div style="font-family:Arial;padding:20px">
-          <h1>Happy Diwali 🎉</h1>
-          <p>
-            Enjoy amazing travel offers with Pumpkin Pictures.
-          </p>
-          <h3>Book Your Holiday Today ✈️</h3>
-        </div>
-      `;
-    } else if (
-      templateName === "offer Template"
-    ) {
-      subject = "Special Offer ✈️";
-
-      html = `
-        <div style="font-family:Arial;padding:20px">
-          <h1>Special Travel Offer</h1>
-          <p>
-            Get exclusive discounts on your next trip.
-          </p>
-          <h3>Limited Time Offer 🚀</h3>
-        </div>
-      `;
-    } else if (
-      templateName === "offer1 Template"
-    ) {
-      subject = "Festival 🎊";
-
-      html = `
-        <div style="font-family:Arial;padding:20px">
-          <h1>Festival Holiday Packages 🎊</h1>
-          <p>
-            Enjoy memorable holidays with your family.
-          </p>
-          <h3>Special Festive Discounts ✨</h3>
+          <h1>Happy Diwali ✨</h1>
+          <p>Enjoy amazing festive travel offers.</p>
+          <h3>Book Your Holiday Today 🎆</h3>
         </div>
       `;
     }
 
+    // TEMPLATE 2
+    else if (templateName === "Offer Template") {
+      subject = "Special Offer ✈️";
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Special Offer</h1>
+          <p>Get huge discounts on travel packages.</p>
+          <h3>Limited Time Offer 🚀</h3>
+        </div>
+      `;
+    }
+
+    // TEMPLATE 3
+    else if (templateName === "Festival Template") {
+      subject = "Festival Packages 🎊";
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Festival Holiday Packages</h1>
+          <p>Enjoy festive travel deals with family.</p>
+          <h3>Book Now ✨</h3>
+        </div>
+      `;
+    }
+
+    // SEND EMAILS
     for (const user of subscribers) {
       if (!user?.email) continue;
 
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject,
-        html,
-      });
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject,
+          html,
+        });
 
-      console.log("EMAIL SENT:", user.email);
+        console.log(
+          "EMAIL SENT TO:",
+          user.email
+        );
+      } catch (emailErr) {
+        console.log(
+          "EMAIL FAILED:",
+          user.email,
+          emailErr.message
+        );
+      }
     }
 
     return res.status(200).json({
@@ -621,5 +586,5 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT} 🚀`);
 });
