@@ -7,14 +7,28 @@ require("dotenv").config();
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 /* =========================
    MIDDLEWARE
 ========================= */
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://frontend-production-e755a.up.railway.app",
+      "https://pumpkinpicturesllp.uk",
+      "https://www.pumpkinpicturesllp.uk",
+      "http://localhost:5173",
+      "www.pumpkinpicturesllp.uk",
+      "pumpkinpicturesllp.uk",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
 
-// FIX ONLY (Node 22 safe wildcard)
-app.options(/.*/, cors());
+app.options("*", cors());
 
 app.use(express.json());
 
@@ -50,7 +64,7 @@ mongoose
     dbName: "travel",
   })
   .then(() => {
-    console.log("MongoDB Connected Successfully");
+    console.log("MongoDB Connected Successfully ✅");
   })
   .catch((err) => {
     console.log("MongoDB Connection Error:", err);
@@ -65,9 +79,24 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
+   HEALTH
+========================= */
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    mongodb:
+      mongoose.connection.readyState === 1
+        ? "connected"
+        : "disconnected",
+  });
+});
+
+/* =========================
    CONTACT ROUTES
 ========================= */
 
+// GET CONTACTS
 app.get("/contact", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -90,6 +119,7 @@ app.get("/contact", async (req, res) => {
   }
 });
 
+// SAVE CONTACT
 app.post("/contact", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -135,9 +165,17 @@ app.post("/contact", async (req, res) => {
   }
 });
 
+// DELETE CONTACT
 app.delete("/contact", async (req, res) => {
   try {
     const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "ID required",
+      });
+    }
 
     await mongoose.connection.db
       .collection("contacts")
@@ -233,6 +271,7 @@ app.put("/contact-replied", async (req, res) => {
    SUBSCRIBERS ROUTES
 ========================= */
 
+// GET SUBSCRIBERS
 app.get("/subscribers", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -261,6 +300,7 @@ app.get("/subscribers", async (req, res) => {
   }
 });
 
+// SAVE SUBSCRIBER
 app.post("/subscribe", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -272,10 +312,13 @@ app.post("/subscribe", async (req, res) => {
 
     const { email } = req.body;
 
-    if (!email) {
+    if (
+      !email ||
+      !email.includes("@")
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Email required",
+        message: "Valid email required",
       });
     }
 
@@ -316,9 +359,18 @@ app.delete("/subscribers", async (req, res) => {
   try {
     const { id } = req.query;
 
-    await mongoose.connection.db.collection("subscribers").deleteOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "ID required",
+      });
+    }
+
+    await mongoose.connection.db
+      .collection("subscribers")
+      .deleteOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
 
     return res.status(200).json({
       success: true,
@@ -332,6 +384,7 @@ app.delete("/subscribers", async (req, res) => {
     });
   }
 });
+
 /* =========================
    LOGIN
 ========================= */
@@ -340,7 +393,10 @@ app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (username === "admin" && password === "1234") {
+    if (
+      username === "admin" &&
+      password === "1234"
+    ) {
       return res.status(200).json({
         success: true,
         token: "admin123",
@@ -395,7 +451,10 @@ app.post("/send-template", async (req, res) => {
       });
     }
 
-    if (!subscribers || subscribers.length === 0) {
+    if (
+      !subscribers ||
+      subscribers.length === 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "No subscribers found",
@@ -407,13 +466,44 @@ app.post("/send-template", async (req, res) => {
 
     if (templateName === "Diwali Template") {
       subject = "Diwali Offers 🎉";
-      html = `<div>Welcome</div>`;
-    } else if (templateName === "offer Template") {
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Happy Diwali 🎉</h1>
+          <p>
+            Enjoy amazing travel offers with Pumpkin Pictures.
+          </p>
+          <h3>Book Your Holiday Today ✈️</h3>
+        </div>
+      `;
+    } else if (
+      templateName === "offer Template"
+    ) {
       subject = "Special Offer ✈️";
-      html = `<div>Offer</div>`;
-    } else if (templateName === "offer1 Template") {
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Special Travel Offer</h1>
+          <p>
+            Get exclusive discounts on your next trip.
+          </p>
+          <h3>Limited Time Offer 🚀</h3>
+        </div>
+      `;
+    } else if (
+      templateName === "offer1 Template"
+    ) {
       subject = "Festival 🎊";
-      html = `<div>Festival</div>`;
+
+      html = `
+        <div style="font-family:Arial;padding:20px">
+          <h1>Festival Holiday Packages 🎊</h1>
+          <p>
+            Enjoy memorable holidays with your family.
+          </p>
+          <h3>Special Festive Discounts ✨</h3>
+        </div>
+      `;
     }
 
     for (const user of subscribers) {
@@ -425,6 +515,8 @@ app.post("/send-template", async (req, res) => {
         subject,
         html,
       });
+
+      console.log("EMAIL SENT:", user.email);
     }
 
     return res.status(200).json({
@@ -456,19 +548,35 @@ app.post("/reply", async (req, res) => {
 
     const { email, message } = req.body;
 
+    if (!email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and message required",
+      });
+    }
+
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Reply",
-      html: `<div>${message}</div>`,
+      subject: "Reply From Pumpkin Pictures",
+      html: `
+        <div style="font-family:Arial;padding:20px">
+          <h2>Reply From Pumpkin Pictures</h2>
+          <p>${message}</p>
+        </div>
+      `,
     });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({
+      success: true,
+      message: "Reply sent successfully",
+    });
   } catch (err) {
     console.log("REPLY ERROR:", err);
 
     return res.status(500).json({
       success: false,
+      message: err.message,
     });
   }
 });
